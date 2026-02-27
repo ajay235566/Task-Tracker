@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Plus, LayoutDashboard, ListTodo, Settings, Search, Bell, CheckCircle2, Clock, AlertCircle, Menu, X as CloseIcon, Info, CheckCircle, LogOut, Trophy } from 'lucide-react';
+import { Plus, LayoutDashboard, ListTodo, Settings, Search, Bell, CheckCircle2, Clock, AlertCircle, Menu, X as CloseIcon, Info, CheckCircle, LogOut, Trophy, ArrowUpDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Task, Notification, UserProfile, Badge } from './types';
 import { TaskCard } from './components/TaskCard';
 import { TaskModal } from './components/TaskModal';
 import { ChatBot } from './components/ChatBot';
 import { BadgeGallery } from './components/BadgeGallery';
+import { CustomDropdown } from './components/CustomDropdown';
 import { cn } from './lib/utils';
 
 export default function App() {
@@ -15,7 +16,9 @@ export default function App() {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState<'all' | 'todo' | 'in-progress' | 'done'>('all');
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [currentView, setCurrentView] = useState<'dashboard' | 'tasks' | 'settings' | 'achievements'>('dashboard');
+  const [currentView, setCurrentView] = useState<'dashboard' | 'tasks' | 'settings' | 'achievements' | 'finished'>('dashboard');
+  const [sortBy, setSortBy] = useState<'priority' | 'dueDate' | 'none'>('none');
+  const [priorityFilter, setPriorityFilter] = useState<'all' | 'low' | 'medium' | 'high'>('all');
   
   const [userProfile, setUserProfile] = useState<UserProfile>({
     name: 'Ajay',
@@ -260,8 +263,26 @@ export default function App() {
   const filteredTasks = tasks.filter(task => {
     const matchesSearch = task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          task.description.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    if (currentView === 'finished') {
+      return matchesSearch && task.status === 'done';
+    }
+
+    // For other views, exclude done tasks
+    if (task.status === 'done') return false;
+
     const matchesTab = activeTab === 'all' || task.status === activeTab;
-    return matchesSearch && matchesTab;
+    const matchesPriority = priorityFilter === 'all' || task.priority === priorityFilter;
+    return matchesSearch && matchesTab && matchesPriority;
+  }).sort((a, b) => {
+    if (sortBy === 'priority') {
+      const priorityMap = { high: 3, medium: 2, low: 1 };
+      return priorityMap[b.priority] - priorityMap[a.priority];
+    }
+    if (sortBy === 'dueDate') {
+      return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
+    }
+    return 0;
   });
 
   const stats = {
@@ -302,6 +323,13 @@ export default function App() {
             onClick={() => setCurrentView('tasks')}
           />
           <SidebarItem 
+            icon={<CheckCircle2 size={20} />} 
+            label="Finished Tasks" 
+            active={currentView === 'finished'} 
+            collapsed={!isSidebarOpen} 
+            onClick={() => setCurrentView('finished')}
+          />
+          <SidebarItem 
             icon={<Trophy size={20} />} 
             label="Achievements" 
             active={currentView === 'achievements'} 
@@ -326,7 +354,7 @@ export default function App() {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 flex flex-col h-screen overflow-hidden">
+      <main className="flex-1 flex flex-col h-full overflow-hidden">
         {/* Header */}
         <header className="h-16 sm:h-20 bg-white border-b-2 sm:border-b-4 border-slate-900 flex items-center justify-between px-4 sm:px-8 shrink-0 gap-2">
           <div className="flex items-center gap-2 sm:gap-4 flex-1 max-w-xl">
@@ -349,10 +377,10 @@ export default function App() {
               </div>
               <div className="flex items-center gap-1 sm:gap-2">
                 {[
-                  "https://i.giphy.com/media/v1.Y2lkPTc5MGI3NjExNHJ6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6JmVwPXYxX2ludGVybmFsX2dpZl9ieV9pZCZjdD1n/13HgwGsXF0aiGY/giphy.gif",
-                  "https://i.giphy.com/media/v1.Y2lkPTc5MGI3NjExNHJ6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6JmVwPXYxX2ludGVybmFsX2dpZl9ieV9pZCZjdD1n/slVWEctHZKvWU/giphy.gif",
-                  "https://i.giphy.com/media/v1.Y2lkPTc5MGI3NjExNHJ6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6JmVwPXYxX2ludGVybmFsX2dpZl9ieV9pZCZjdD1n/UfR30gxLc5mx2/giphy.gif",
-                  "https://i.giphy.com/media/v1.Y2lkPTc5MGI3NjExNHJ6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6JmVwPXYxX2ludGVybmFsX2dpZl9ieV9pZCZjdD1n/do6lyG5YvS67S/giphy.gif"
+                  "https://i.giphy.com/13HgwGsXF0aiGY.gif",
+                  "https://i.giphy.com/slVWEctHZKvWU.gif",
+                  "https://i.giphy.com/UfR30gxLc5mx2.gif",
+                  "https://i.giphy.com/do6lyG5YvS67S.gif"
                 ].map((gif, idx) => (
                   <div 
                     key={idx} 
@@ -505,7 +533,7 @@ export default function App() {
         </header>
 
         {/* View Content */}
-        <div className="flex-1 overflow-y-auto p-4 sm:p-8 space-y-6 sm:space-y-8 no-scrollbar">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-8 pb-[100px] space-y-6 sm:space-y-8 no-scrollbar">
           {currentView === 'dashboard' && (
             <section className="space-y-6">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
@@ -564,22 +592,22 @@ export default function App() {
                 />
               </div>
 
-              <BadgeGallery badges={badges} />
-
               <div className="pt-4">
                 <h2 className="text-2xl font-bold mb-4">Recent Tasks</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {tasks.slice(0, 3).map(task => (
-                    <TaskCard 
-                      key={task.id}
-                      task={task} 
-                      onDelete={handleDeleteTask} 
-                      onEdit={handleEditTask}
-                      onStatusChange={handleStatusChange}
-                    />
-                  ))}
-                  {tasks.length === 0 && (
-                    <p className="text-slate-400 italic">No tasks yet. Create one to get started!</p>
+                  <AnimatePresence mode="popLayout">
+                    {tasks.filter(t => t.status !== 'done').slice(0, 3).map(task => (
+                      <TaskCard 
+                        key={task.id}
+                        task={task} 
+                        onDelete={handleDeleteTask} 
+                        onEdit={handleEditTask}
+                        onStatusChange={handleStatusChange}
+                      />
+                    ))}
+                  </AnimatePresence>
+                  {tasks.filter(t => t.status !== 'done').length === 0 && (
+                    <p className="text-slate-400 italic">No active tasks. Create one or check finished tasks!</p>
                   )}
                 </div>
                 {tasks.length > 3 && (
@@ -613,35 +641,103 @@ export default function App() {
                 </button>
               </div>
 
-              <div className="flex items-center gap-2 sm:gap-4 border-b-2 border-slate-200 overflow-x-auto no-scrollbar">
-                <TabItem label="All Tasks" active={activeTab === 'all'} onClick={() => setActiveTab('all')} count={tasks.length} />
-                <TabItem label="To Do" active={activeTab === 'todo'} onClick={() => setActiveTab('todo')} count={tasks.filter(t => t.status === 'todo').length} />
-                <TabItem label="In Progress" active={activeTab === 'in-progress'} onClick={() => setActiveTab('in-progress')} count={tasks.filter(t => t.status === 'in-progress').length} />
-                <TabItem label="Done" active={activeTab === 'done'} onClick={() => setActiveTab('done')} count={tasks.filter(t => t.status === 'done').length} />
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b-2 border-slate-200">
+                <div className="flex items-center gap-2 sm:gap-4 overflow-x-auto no-scrollbar">
+                  <TabItem label="All Tasks" active={activeTab === 'all'} onClick={() => setActiveTab('all')} count={tasks.filter(t => t.status !== 'done').length} />
+                  <TabItem label="To Do" active={activeTab === 'todo'} onClick={() => setActiveTab('todo')} count={tasks.filter(t => t.status === 'todo').length} />
+                  <TabItem label="In Progress" active={activeTab === 'in-progress'} onClick={() => setActiveTab('in-progress')} count={tasks.filter(t => t.status === 'in-progress').length} />
+                </div>
+                
+                <div className="flex flex-wrap items-center gap-2 pb-2 sm:pb-0">
+                  <CustomDropdown 
+                    icon={<AlertCircle size={14} />}
+                    value={priorityFilter}
+                    onChange={(val) => setPriorityFilter(val)}
+                    options={[
+                      { value: 'all', label: 'All Priorities' },
+                      { value: 'low', label: 'Low Priority' },
+                      { value: 'medium', label: 'Medium Priority' },
+                      { value: 'high', label: 'High Priority' },
+                    ]}
+                  />
+
+                  <CustomDropdown 
+                    icon={<ArrowUpDown size={14} />}
+                    value={sortBy}
+                    onChange={(val) => setSortBy(val)}
+                    align="right"
+                    options={[
+                      { value: 'none', label: 'Sort By' },
+                      { value: 'priority', label: 'Priority (H-L)' },
+                      { value: 'dueDate', label: 'Due Date' },
+                    ]}
+                  />
+                </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {filteredTasks.map(task => (
-                  <motion.div
-                    key={task.id}
-                    layout
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.9 }}
-                  >
-                    <TaskCard 
-                      task={task} 
-                      onDelete={handleDeleteTask} 
-                      onEdit={handleEditTask}
-                      onStatusChange={handleStatusChange}
-                    />
-                  </motion.div>
-                ))}
+                <AnimatePresence mode="popLayout">
+                  {filteredTasks.map(task => (
+                    <motion.div
+                      key={task.id}
+                      layout
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.9 }}
+                    >
+                      <TaskCard 
+                        task={task} 
+                        onDelete={handleDeleteTask} 
+                        onEdit={handleEditTask}
+                        onStatusChange={handleStatusChange}
+                      />
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
                 {filteredTasks.length === 0 && (
                   <div className="col-span-full py-20 flex flex-col items-center justify-center text-slate-400 border-2 border-dashed border-slate-300 rounded-xl">
                     <ListTodo size={48} className="mb-4 opacity-20" />
                     <p className="font-bold">No tasks found</p>
                     <p className="text-sm">Try adjusting your filters or create a new task.</p>
+                  </div>
+                )}
+              </div>
+            </section>
+          )}
+
+          {currentView === 'finished' && (
+            <section className="space-y-6">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
+                <div>
+                  <h1 className="text-2xl sm:text-4xl font-black tracking-tight">Finished Tasks</h1>
+                  <p className="text-xs sm:text-sm text-slate-500 font-medium">Review your completed accomplishments.</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                <AnimatePresence mode="popLayout">
+                  {filteredTasks.map(task => (
+                    <motion.div
+                      key={task.id}
+                      layout
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.9 }}
+                    >
+                      <TaskCard 
+                        task={task} 
+                        onDelete={handleDeleteTask} 
+                        onEdit={handleEditTask}
+                        onStatusChange={handleStatusChange}
+                      />
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
+                {filteredTasks.length === 0 && (
+                  <div className="col-span-full py-20 flex flex-col items-center justify-center text-slate-400 border-2 border-dashed border-slate-300 rounded-xl">
+                    <CheckCircle2 size={48} className="mb-4 opacity-20" />
+                    <p className="font-bold">No finished tasks yet</p>
+                    <p className="text-sm">Complete some tasks to see them here!</p>
                   </div>
                 )}
               </div>
