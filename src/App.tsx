@@ -81,49 +81,26 @@ export default function App() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Load tasks from localStorage
+  // Load tasks and profile from server
   useEffect(() => {
-    const savedTasks = localStorage.getItem('vibrant-tasks');
-    if (savedTasks) {
-      setTasks(JSON.parse(savedTasks));
-    } else {
-      const initialTasks: Task[] = [
-        {
-          id: '1',
-          title: 'Design Dashboard UI',
-          description: 'Create a clean and crisp UI for the task tracker using vibrant colors.',
-          status: 'done',
-          priority: 'high',
-          dueDate: new Date().toISOString().split('T')[0],
-          createdAt: new Date().toISOString(),
-        },
-        {
-          id: '2',
-          title: 'Implement AI Chatbot',
-          description: 'Add a floating AI assistant that helps users manage their tasks.',
-          status: 'in-progress',
-          priority: 'medium',
-          dueDate: new Date().toISOString().split('T')[0],
-          createdAt: new Date().toISOString(),
-        },
-        {
-          id: '3',
-          title: 'Setup Database',
-          description: 'Configure local storage or a real database for task persistence.',
-          status: 'todo',
-          priority: 'low',
-          dueDate: new Date().toISOString().split('T')[0],
-          createdAt: new Date().toISOString(),
+    const fetchData = async () => {
+      try {
+        const tasksRes = await fetch('/api/tasks');
+        if (tasksRes.ok) {
+          const data = await tasksRes.json();
+          setTasks(data);
         }
-      ];
-      setTasks(initialTasks);
-      localStorage.setItem('vibrant-tasks', JSON.stringify(initialTasks));
-    }
 
-    const savedProfile = localStorage.getItem('vibrant-user-profile');
-    if (savedProfile) {
-      setUserProfile(JSON.parse(savedProfile));
-    }
+        const profileRes = await fetch('/api/profile');
+        if (profileRes.ok) {
+          const data = await profileRes.json();
+          setUserProfile(data);
+        }
+      } catch (err) {
+        console.error('Failed to fetch data:', err);
+      }
+    };
+    fetchData();
 
     const savedBadges = localStorage.getItem('vibrant-badges');
     if (savedBadges) {
@@ -142,23 +119,27 @@ export default function App() {
     const newXP = (completedCount % 5) * 20; // 20 XP per task, 100 XP per level
 
     if (newLevel !== userProfile.level || newXP !== userProfile.xp) {
-      setUserProfile(prev => {
-        const updated = { ...prev, level: newLevel, xp: newXP };
-        localStorage.setItem('vibrant-user-profile', JSON.stringify(updated));
-        
-        if (newLevel > prev.level) {
-          const levelNotif: Notification = {
-            id: `level-${newLevel}`,
-            title: 'Level Up!',
-            message: `You've reached Level ${newLevel}! Keep up the great work.`,
-            time: 'Just now',
-            isRead: false,
-            type: 'success'
-          };
-          setNotifications(n => [levelNotif, ...n]);
-        }
-        return updated;
+      const updatedProfile = { ...userProfile, level: newLevel, xp: newXP };
+      setUserProfile(updatedProfile);
+      
+      // Sync profile to server
+      fetch('/api/profile', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedProfile),
       });
+
+      if (newLevel > userProfile.level) {
+        const levelNotif: Notification = {
+          id: `level-${newLevel}`,
+          title: 'Level Up!',
+          message: `You've reached Level ${newLevel}! Keep up the great work.`,
+          time: 'Just now',
+          isRead: false,
+          type: 'success'
+        };
+        setNotifications(n => [levelNotif, ...n]);
+      }
     }
 
     setBadges(prev => {
@@ -197,7 +178,7 @@ export default function App() {
     });
   }, [tasks]);
 
-  const handleSaveProfile = (e: React.FormEvent) => {
+  const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     const formData = new FormData(e.target as HTMLFormElement);
     const updatedProfile = {
@@ -206,7 +187,13 @@ export default function App() {
       email: formData.get('email') as string,
     };
     setUserProfile(updatedProfile);
-    localStorage.setItem('vibrant-user-profile', JSON.stringify(updatedProfile));
+    
+    // Sync to server
+    await fetch('/api/profile', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updatedProfile),
+    });
     
     // Add a success notification
     const newNotification: Notification = {
@@ -220,15 +207,18 @@ export default function App() {
     setNotifications(prev => [newNotification, ...prev]);
   };
 
-  // Save tasks to localStorage
-  useEffect(() => {
-    localStorage.setItem('vibrant-tasks', JSON.stringify(tasks));
-  }, [tasks]);
-
-  const handleCreateTask = (taskData: Partial<Task>) => {
+  const handleCreateTask = async (taskData: Partial<Task>) => {
     if (editingTask) {
-      setTasks(prev => prev.map(t => t.id === editingTask.id ? { ...t, ...taskData } as Task : t));
+      const updatedTask = { ...editingTask, ...taskData } as Task;
+      setTasks(prev => prev.map(t => t.id === editingTask.id ? updatedTask : t));
       setEditingTask(undefined);
+      
+      // Sync to server
+      await fetch(`/api/tasks/${editingTask.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedTask),
+      });
     } else {
       const newTask: Task = {
         id: Math.random().toString(36).substr(2, 9),
@@ -240,11 +230,19 @@ export default function App() {
         createdAt: new Date().toISOString(),
       };
       setTasks(prev => [newTask, ...prev]);
+
+      // Sync to server
+      await fetch('/api/tasks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newTask),
+      });
     }
   };
 
-  const handleDeleteTask = (id: string) => {
+  const handleDeleteTask = async (id: string) => {
     setTasks(prev => prev.filter(t => t.id !== id));
+    await fetch(`/api/tasks/${id}`, { method: 'DELETE' });
   };
 
   const handleEditTask = (task: Task) => {
@@ -252,8 +250,18 @@ export default function App() {
     setIsModalOpen(true);
   };
 
-  const handleStatusChange = (id: string, status: Task['status']) => {
-    setTasks(prev => prev.map(t => t.id === id ? { ...t, status } : t));
+  const handleStatusChange = async (id: string, status: Task['status']) => {
+    const task = tasks.find(t => t.id === id);
+    if (!task) return;
+
+    const updatedTask = { ...task, status };
+    setTasks(prev => prev.map(t => t.id === id ? updatedTask : t));
+
+    await fetch(`/api/tasks/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updatedTask),
+    });
   };
 
   const markAllAsRead = () => {
@@ -792,6 +800,31 @@ export default function App() {
                   </div>
                   <button type="submit" className="vibrant-button bg-brand-primary mt-4">Save Changes</button>
                 </form>
+
+                <div className="mt-12 pt-8 border-t-2 border-slate-100">
+                  <h3 className="text-lg font-bold mb-2">Reminder Settings</h3>
+                  <p className="text-sm text-slate-500 mb-4">
+                    Verify your email reminder configuration. Make sure you have set up your SMTP credentials in the <code>.env</code> file.
+                  </p>
+                  <button 
+                    onClick={async () => {
+                      try {
+                        const res = await fetch('/api/test-email', { method: 'POST' });
+                        const data = await res.json();
+                        if (data.success) {
+                          alert('Test email sent successfully!');
+                        } else {
+                          alert(`Error: ${data.error || 'Failed to send email'}`);
+                        }
+                      } catch (err) {
+                        alert('Failed to connect to server.');
+                      }
+                    }}
+                    className="vibrant-button bg-white border-2 border-slate-900"
+                  >
+                    Send Test Reminder
+                  </button>
+                </div>
               </div>
             </section>
           )}

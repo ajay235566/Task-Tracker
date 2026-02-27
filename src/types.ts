@@ -9,6 +9,7 @@ export interface Task {
   priority: TaskPriority;
   dueDate: string;
   createdAt: string;
+  reminderSent?: boolean;
 }
 
 export interface Notification {
