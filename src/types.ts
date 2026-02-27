@@ -24,3 +24,20 @@ export interface Message {
   role: 'user' | 'model';
   content: string;
 }
+
+export interface UserProfile {
+  name: string;
+  email: string;
+  avatar?: string;
+  level: number;
+  xp: number;
+}
+
+export interface Badge {
+  id: string;
+  name: string;
+  description: string;
+  icon: string; // URL or icon name
+  unlockedAt?: string;
+  requirement: string;
+}
