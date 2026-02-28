@@ -4,7 +4,6 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Task, Notification, UserProfile, Badge } from './types';
 import { TaskCard } from './components/TaskCard';
 import { TaskModal } from './components/TaskModal';
-import { ChatBot } from './components/ChatBot';
 import { BadgeGallery } from './components/BadgeGallery';
 import { CustomDropdown } from './components/CustomDropdown';
 import { LandingPage } from './components/LandingPage';
@@ -950,7 +949,6 @@ export default function App() {
         onSave={handleCreateTask}
         initialTask={editingTask}
       />
-      <ChatBot tasks={tasks} />
       <AuthModal 
         isOpen={isAuthModalOpen} 
         mode={authMode} 

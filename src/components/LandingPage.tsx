@@ -128,7 +128,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onSignup }) =
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
             {[
               { title: 'Task Management', desc: 'Create, edit, and organize tasks with priorities and due dates. Use our intuitive drag-and-drop feel interface.' },
-              { title: 'AI Assistant', desc: 'Stuck? Chat with our built-in AI to help you break down complex tasks or get productivity tips.' },
+              { title: 'Progress Tracking', desc: 'Watch your productivity soar with detailed stats and visual progress indicators for all your projects.' },
               { title: 'Email Reminders', desc: 'Get notified when tasks are due. Our smart system sends reminders directly to your inbox.' },
               { title: 'XP & Levels', desc: 'Every completed task earns you XP. Level up your profile and unlock unique achievement badges.' }
             ].map((item, i) => (
@@ -186,7 +186,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onSignup }) =
               Vibrant Tasker is built for anyone who finds traditional task managers boring. If you want a tool that celebrates your wins and keeps you engaged, you're in the right place.
             </p>
             <ul className="space-y-4">
-              {['Gamified progress tracking', 'Clean, bold aesthetic', 'AI-powered productivity', 'No-nonsense organization'].map((text, i) => (
+              {['Gamified progress tracking', 'Clean, bold aesthetic', 'Smart productivity', 'No-nonsense organization'].map((text, i) => (
                 <motion.li 
                   key={i} 
                   whileHover={{ x: 5 }}
