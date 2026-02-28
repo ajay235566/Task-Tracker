@@ -5,6 +5,9 @@ import nodemailer from 'nodemailer';
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import session from 'express-session';
+import bcrypt from 'bcryptjs';
+import SQLiteStoreFactory from 'connect-sqlite3';
 
 dotenv.config();
 
@@ -14,35 +17,71 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = 3000;
 
+const SQLiteStore = SQLiteStoreFactory(session);
+
+app.set('trust proxy', 1); // trust first proxy
 app.use(express.json());
+app.use(session({
+  store: new SQLiteStore({ db: 'sessions.db', dir: '.' }) as any,
+  secret: process.env.SESSION_SECRET || 'vibrant-tasker-secret-stable-key-123',
+  resave: true, // Force session to be saved back to the session store
+  saveUninitialized: true, // Force a session that is "uninitialized" to be saved to the store
+  rolling: true, // Force a session identifier cookie to be set on every response
+  cookie: {
+    secure: true, // Required for SameSite=None in iframe
+    sameSite: 'none', // Required for cross-origin iframe
+    httpOnly: true,
+    maxAge: 1000 * 60 * 60 * 24 * 7 // 1 week
+  }
+}));
 
 // Database setup
 const db = new Database('tasks.db');
 db.exec(`
+  CREATE TABLE IF NOT EXISTS users (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    email TEXT UNIQUE NOT NULL,
+    password TEXT NOT NULL,
+    level INTEGER DEFAULT 1,
+    xp INTEGER DEFAULT 0,
+    createdAt TEXT NOT NULL
+  );
+
   CREATE TABLE IF NOT EXISTS tasks (
     id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
     title TEXT NOT NULL,
     description TEXT,
     status TEXT NOT NULL,
     priority TEXT NOT NULL,
     dueDate TEXT NOT NULL,
     createdAt TEXT NOT NULL,
-    reminderSent INTEGER DEFAULT 0
-  );
-  
-  CREATE TABLE IF NOT EXISTS user_profile (
-    id INTEGER PRIMARY KEY CHECK (id = 1),
-    name TEXT NOT NULL,
-    email TEXT NOT NULL,
-    level INTEGER DEFAULT 1,
-    xp INTEGER DEFAULT 0
+    reminderSent INTEGER DEFAULT 0,
+    FOREIGN KEY (user_id) REFERENCES users(id)
   );
 `);
 
-// Initialize user profile if not exists
-const profile = db.prepare('SELECT * FROM user_profile WHERE id = 1').get();
-if (!profile) {
-  db.prepare('INSERT INTO user_profile (id, name, email) VALUES (1, ?, ?)').run('Ajay', 'ajay@example.com');
+// Migration: Add user_id to tasks if it doesn't exist (for existing databases)
+const tableInfo = db.prepare("PRAGMA table_info(tasks)").all() as any[];
+const hasUserId = tableInfo.some(col => col.name === 'user_id');
+if (!hasUserId) {
+  try {
+    db.exec('ALTER TABLE tasks ADD COLUMN user_id TEXT');
+    console.log('Migration: Added user_id column to tasks table');
+  } catch (err) {
+    console.error('Migration failed (user_id):', err);
+  }
+}
+
+const hasReminderSent = tableInfo.some(col => col.name === 'reminderSent');
+if (!hasReminderSent) {
+  try {
+    db.exec('ALTER TABLE tasks ADD COLUMN reminderSent INTEGER DEFAULT 0');
+    console.log('Migration: Added reminderSent column to tasks table');
+  } catch (err) {
+    console.error('Migration failed (reminderSent):', err);
+  }
 }
 
 // Nodemailer setup
@@ -56,55 +95,106 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-// API Routes
-app.get('/api/tasks', (req, res) => {
-  const tasks = db.prepare('SELECT * FROM tasks ORDER BY createdAt DESC').all();
+// Auth Middleware
+const isAuthenticated = (req: any, res: any, next: any) => {
+  if ((req.session as any).userId) {
+    next();
+  } else {
+    res.status(401).json({ error: 'Unauthorized' });
+  }
+};
+
+// Auth Routes
+app.post('/api/auth/signup', async (req, res) => {
+  const { name, email, password } = req.body;
+  try {
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const userId = Math.random().toString(36).substr(2, 9);
+    const createdAt = new Date().toISOString();
+    
+    db.prepare('INSERT INTO users (id, name, email, password, createdAt) VALUES (?, ?, ?, ?, ?)')
+      .run(userId, name, email, hashedPassword, createdAt);
+    
+    (req.session as any).userId = userId;
+    res.status(201).json({ id: userId, name, email });
+  } catch (err: any) {
+    if (err.message.includes('UNIQUE constraint failed')) {
+      res.status(400).json({ error: 'Email already exists' });
+    } else {
+      res.status(500).json({ error: 'Failed to create user' });
+    }
+  }
+});
+
+app.post('/api/auth/login', async (req, res) => {
+  const { email, password } = req.body;
+  const user = db.prepare('SELECT * FROM users WHERE email = ?').get(email) as any;
+  
+  if (user && await bcrypt.compare(password, user.password)) {
+    (req.session as any).userId = user.id;
+    res.json({ id: user.id, name: user.name, email: user.email });
+  } else {
+    res.status(401).json({ error: 'Invalid credentials' });
+  }
+});
+
+app.post('/api/auth/logout', (req, res) => {
+  req.session.destroy((err) => {
+    if (err) return res.status(500).json({ error: 'Logout failed' });
+    res.json({ success: true });
+  });
+});
+
+app.get('/api/auth/me', (req, res) => {
+  if (!(req.session as any).userId) return res.status(401).json({ error: 'Not logged in' });
+  const user = db.prepare('SELECT id, name, email, level, xp FROM users WHERE id = ?').get((req.session as any).userId) as any;
+  res.json(user);
+});
+
+// Task Routes (User Specific)
+app.get('/api/tasks', isAuthenticated, (req: any, res) => {
+  const tasks = db.prepare('SELECT * FROM tasks WHERE user_id = ? ORDER BY createdAt DESC').all((req.session as any).userId);
   res.json(tasks.map((t: any) => ({ ...t, reminderSent: !!t.reminderSent })));
 });
 
-app.post('/api/tasks', (req, res) => {
+app.post('/api/tasks', isAuthenticated, (req: any, res) => {
   const { id, title, description, status, priority, dueDate, createdAt } = req.body;
   db.prepare(`
-    INSERT INTO tasks (id, title, description, status, priority, dueDate, createdAt)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
-  `).run(id, title, description, status, priority, dueDate, createdAt);
+    INSERT INTO tasks (id, user_id, title, description, status, priority, dueDate, createdAt)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(id, (req.session as any).userId, title, description, status, priority, dueDate, createdAt);
   res.status(201).json({ success: true });
 });
 
-app.put('/api/tasks/:id', (req, res) => {
+app.put('/api/tasks/:id', isAuthenticated, (req: any, res) => {
   const { id } = req.params;
   const { title, description, status, priority, dueDate } = req.body;
   db.prepare(`
     UPDATE tasks 
     SET title = ?, description = ?, status = ?, priority = ?, dueDate = ?
-    WHERE id = ?
-  `).run(title, description, status, priority, dueDate, id);
+    WHERE id = ? AND user_id = ?
+  `).run(title, description, status, priority, dueDate, id, (req.session as any).userId);
   res.json({ success: true });
 });
 
-app.delete('/api/tasks/:id', (req, res) => {
+app.delete('/api/tasks/:id', isAuthenticated, (req: any, res) => {
   const { id } = req.params;
-  db.prepare('DELETE FROM tasks WHERE id = ?').run(id);
+  db.prepare('DELETE FROM tasks WHERE id = ? AND user_id = ?').run(id, (req.session as any).userId);
   res.json({ success: true });
 });
 
-app.get('/api/profile', (req, res) => {
-  const profile = db.prepare('SELECT * FROM user_profile WHERE id = 1').get();
-  res.json(profile);
-});
-
-app.put('/api/profile', (req, res) => {
+app.put('/api/profile', isAuthenticated, (req: any, res) => {
   const { name, email, level, xp } = req.body;
-  db.prepare('UPDATE user_profile SET name = ?, email = ?, level = ?, xp = ? WHERE id = 1')
-    .run(name, email, level, xp);
+  db.prepare('UPDATE users SET name = ?, email = ?, level = ?, xp = ? WHERE id = ?')
+    .run(name, email, level, xp, (req.session as any).userId);
   res.json({ success: true });
 });
 
-app.post('/api/test-email', async (req, res) => {
-  const profile = db.prepare('SELECT email, name FROM user_profile WHERE id = 1').get() as any;
+app.post('/api/test-email', isAuthenticated, async (req: any, res) => {
+  const user = db.prepare('SELECT email, name FROM users WHERE id = ?').get((req.session as any).userId) as any;
   
-  if (!profile || !profile.email) {
-    return res.status(400).json({ error: 'No profile email found' });
+  if (!user || !user.email) {
+    return res.status(400).json({ error: 'No user email found' });
   }
 
   if (!process.env.SMTP_USER) {
@@ -114,10 +204,10 @@ app.post('/api/test-email', async (req, res) => {
   try {
     await transporter.sendMail({
       from: process.env.SMTP_FROM || '"Vibrant Tasker" <reminders@example.com>',
-      to: profile.email,
+      to: user.email,
       subject: 'Test Reminder from Vibrant Tasker',
-      text: `Hi ${profile.name},\n\nThis is a test email to verify your reminder settings.\n\nHappy tasking!`,
-      html: `<h1>Test Reminder</h1><p>Hi ${profile.name},</p><p>This is a test email to verify your reminder settings.</p>`,
+      text: `Hi ${user.name},\n\nThis is a test email to verify your reminder settings.\n\nHappy tasking!`,
+      html: `<h1>Test Reminder</h1><p>Hi ${user.name},</p><p>This is a test email to verify your reminder settings.</p>`,
     });
     res.json({ success: true });
   } catch (err: any) {
@@ -134,24 +224,24 @@ setInterval(async () => {
 
     // Find tasks due today or tomorrow that haven't had a reminder sent
     const tasksToRemind = db.prepare(`
-      SELECT * FROM tasks 
-      WHERE dueDate <= ? AND status != 'done' AND reminderSent = 0
-    `).all(tomorrowStr);
+      SELECT t.*, u.email, u.name as user_name 
+      FROM tasks t
+      JOIN users u ON t.user_id = u.id
+      WHERE t.dueDate <= ? AND t.status != 'done' AND t.reminderSent = 0
+    `).all(tomorrowStr) as any[];
 
-    const profile = db.prepare('SELECT email, name FROM user_profile WHERE id = 1').get() as any;
-
-    if (tasksToRemind.length > 0 && profile && profile.email && process.env.SMTP_USER) {
-      for (const task of tasksToRemind as any) {
+    if (tasksToRemind.length > 0 && process.env.SMTP_USER) {
+      for (const task of tasksToRemind) {
         try {
           await transporter.sendMail({
             from: process.env.SMTP_FROM || '"Vibrant Tasker" <reminders@example.com>',
-            to: profile.email,
+            to: task.email,
             subject: `Reminder: Task "${task.title}" is due soon!`,
-            text: `Hi ${profile.name},\n\nThis is a reminder that your task "${task.title}" is due on ${task.dueDate}.\n\nDescription: ${task.description}\nPriority: ${task.priority}\n\nKeep up the great work!\n- Vibrant Tasker`,
+            text: `Hi ${task.user_name},\n\nThis is a reminder that your task "${task.title}" is due on ${task.dueDate}.\n\nDescription: ${task.description}\nPriority: ${task.priority}\n\nKeep up the great work!\n- Vibrant Tasker`,
             html: `
               <div style="font-family: sans-serif; padding: 20px; border: 4px solid #0f172a; border-radius: 12px;">
                 <h1 style="margin-top: 0;">Task Reminder</h1>
-                <p>Hi <strong>${profile.name}</strong>,</p>
+                <p>Hi <strong>${task.user_name}</strong>,</p>
                 <p>This is a reminder that your task <strong>"${task.title}"</strong> is due on <strong>${task.dueDate}</strong>.</p>
                 <div style="background: #f8fafc; padding: 15px; border-left: 4px solid #10b981; margin: 20px 0;">
                   <p style="margin: 0;"><strong>Description:</strong> ${task.description}</p>
@@ -164,7 +254,7 @@ setInterval(async () => {
           });
 
           db.prepare('UPDATE tasks SET reminderSent = 1 WHERE id = ?').run(task.id);
-          console.log(`Reminder sent for task: ${task.title} to ${profile.email}`);
+          console.log(`Reminder sent for task: ${task.title} to ${task.email}`);
         } catch (mailError) {
           console.error('Failed to send email:', mailError);
         }

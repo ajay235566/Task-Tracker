@@ -7,9 +7,15 @@ import { TaskModal } from './components/TaskModal';
 import { ChatBot } from './components/ChatBot';
 import { BadgeGallery } from './components/BadgeGallery';
 import { CustomDropdown } from './components/CustomDropdown';
+import { LandingPage } from './components/LandingPage';
 import { cn } from './lib/utils';
 
 export default function App() {
+  const [user, setUser] = useState<UserProfile | null>(null);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [authMode, setAuthMode] = useState<'login' | 'signup'>('login');
+  const [isLoading, setIsLoading] = useState(true);
+
   const [tasks, setTasks] = useState<Task[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | undefined>();
@@ -21,8 +27,8 @@ export default function App() {
   const [priorityFilter, setPriorityFilter] = useState<'all' | 'low' | 'medium' | 'high'>('all');
   
   const [userProfile, setUserProfile] = useState<UserProfile>({
-    name: 'Ajay',
-    email: 'ajay@example.com',
+    name: 'Guest',
+    email: '',
     level: 1,
     xp: 0
   });
@@ -36,32 +42,7 @@ export default function App() {
   ]);
 
   // Notification states
-  const [notifications, setNotifications] = useState<Notification[]>([
-    {
-      id: '1',
-      title: 'Task Due Soon',
-      message: 'Design Dashboard UI is due in 2 hours.',
-      time: '2h ago',
-      isRead: false,
-      type: 'warning'
-    },
-    {
-      id: '2',
-      title: 'New Feature',
-      message: 'AI Assistant is now available to help you!',
-      time: '5h ago',
-      isRead: false,
-      type: 'info'
-    },
-    {
-      id: '3',
-      title: 'Task Completed',
-      message: 'Setup Database has been marked as done.',
-      time: '1d ago',
-      isRead: true,
-      type: 'success'
-    }
-  ]);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const notificationRef = useRef<HTMLDivElement>(null);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
@@ -81,35 +62,53 @@ export default function App() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Load tasks and profile from server
+  // Check auth status on mount
   useEffect(() => {
-    const fetchData = async () => {
+    const checkAuth = async () => {
       try {
-        const tasksRes = await fetch('/api/tasks');
-        if (tasksRes.ok) {
-          const data = await tasksRes.json();
-          setTasks(data);
-        }
-
-        const profileRes = await fetch('/api/profile');
-        if (profileRes.ok) {
-          const data = await profileRes.json();
-          setUserProfile(data);
+        const res = await fetch('/api/auth/me', { credentials: 'include' });
+        if (res.ok) {
+          const userData = await res.json();
+          setUser(userData);
+          setUserProfile(userData);
         }
       } catch (err) {
-        console.error('Failed to fetch data:', err);
+        console.error('Auth check failed:', err);
+      } finally {
+        setIsLoading(false);
       }
     };
-    fetchData();
+    checkAuth();
+  }, []);
+
+  // Load tasks when user changes
+  useEffect(() => {
+    if (user) {
+      const fetchData = async () => {
+        try {
+          const tasksRes = await fetch('/api/tasks', { credentials: 'include' });
+          if (tasksRes.ok) {
+            const data = await tasksRes.json();
+            setTasks(data);
+          }
+        } catch (err) {
+          console.error('Failed to fetch data:', err);
+        }
+      };
+      fetchData();
+    } else {
+      setTasks([]);
+    }
 
     const savedBadges = localStorage.getItem('vibrant-badges');
     if (savedBadges) {
       setBadges(JSON.parse(savedBadges));
     }
-  }, []);
+  }, [user]);
 
   // Check for badge unlocks and Level up
   useEffect(() => {
+    if (!user) return;
     const completedTasks = tasks.filter(t => t.status === 'done');
     const completedCount = completedTasks.length;
     const hasHighPriority = completedTasks.some(t => t.priority === 'high');
@@ -127,6 +126,7 @@ export default function App() {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updatedProfile),
+        credentials: 'include'
       });
 
       if (newLevel > userProfile.level) {
@@ -193,6 +193,7 @@ export default function App() {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(updatedProfile),
+      credentials: 'include'
     });
     
     // Add a success notification
@@ -218,6 +219,7 @@ export default function App() {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updatedTask),
+        credentials: 'include'
       });
     } else {
       const newTask: Task = {
@@ -236,13 +238,17 @@ export default function App() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newTask),
+        credentials: 'include'
       });
     }
   };
 
   const handleDeleteTask = async (id: string) => {
     setTasks(prev => prev.filter(t => t.id !== id));
-    await fetch(`/api/tasks/${id}`, { method: 'DELETE' });
+    await fetch(`/api/tasks/${id}`, { 
+      method: 'DELETE',
+      credentials: 'include'
+    });
   };
 
   const handleEditTask = (task: Task) => {
@@ -302,6 +308,76 @@ export default function App() {
 
   const unreadCount = notifications.filter(n => !n.isRead).length;
 
+  const handleLogout = async () => {
+    try {
+      const res = await fetch('/api/auth/logout', { 
+        method: 'POST',
+        credentials: 'include'
+      });
+      if (res.ok) {
+        setUser(null);
+        setUserProfile({ name: 'Guest', email: '', level: 1, xp: 0 });
+        setCurrentView('dashboard');
+      }
+    } catch (err) {
+      console.error('Logout failed:', err);
+    }
+  };
+
+  const handleAuth = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const formData = new FormData(e.target as HTMLFormElement);
+    const data = Object.fromEntries(formData);
+    
+    try {
+      const endpoint = authMode === 'login' ? '/api/auth/login' : '/api/auth/signup';
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+        credentials: 'include'
+      });
+
+      if (res.ok) {
+        const userData = await res.json();
+        setUser(userData);
+        setUserProfile(userData);
+        setIsAuthModalOpen(false);
+      } else {
+        const error = await res.json();
+        alert(error.error || 'Authentication failed');
+      }
+    } catch (err) {
+      console.error('Auth failed:', err);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="h-screen w-screen flex items-center justify-center bg-white">
+        <div className="w-12 h-12 border-4 border-slate-900 border-t-brand-primary rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <>
+        <LandingPage 
+          onLogin={() => { setAuthMode('login'); setIsAuthModalOpen(true); }} 
+          onSignup={() => { setAuthMode('signup'); setIsAuthModalOpen(true); }} 
+        />
+        <AuthModal 
+          isOpen={isAuthModalOpen} 
+          mode={authMode} 
+          onClose={() => setIsAuthModalOpen(false)} 
+          onSubmit={handleAuth}
+          onSwitchMode={() => setAuthMode(authMode === 'login' ? 'signup' : 'login')}
+        />
+      </>
+    );
+  }
+
   return (
     <div className="h-screen w-screen p-2 sm:p-4 bg-white">
       <div className="h-full w-full flex bg-white border-2 sm:border-4 border-slate-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] sm:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] overflow-hidden rounded-xl relative">
@@ -310,56 +386,65 @@ export default function App() {
           "bg-white border-r-2 sm:border-r-4 border-slate-900 transition-all duration-300 flex flex-col z-40",
           isSidebarOpen ? "w-64" : "w-0 sm:w-20 overflow-hidden"
         )}>
-        <div className="p-6 flex items-center gap-3 border-b-2 border-slate-900 bg-brand-primary">
-          <div className="w-8 h-8 bg-black rounded flex items-center justify-center text-brand-primary font-black">T</div>
-          {isSidebarOpen && <span className="font-black text-xl tracking-tighter">TASKER</span>}
-        </div>
+          <div className="p-6 flex items-center gap-3 border-b-2 border-slate-900 bg-brand-primary">
+            <div className="w-8 h-8 bg-black rounded flex items-center justify-center text-brand-primary font-black">T</div>
+            {isSidebarOpen && <span className="font-black text-xl tracking-tighter">TASKER</span>}
+          </div>
 
-        <nav className="flex-1 p-4 space-y-2">
-          <SidebarItem 
-            icon={<LayoutDashboard size={20} />} 
-            label="Dashboard" 
-            active={currentView === 'dashboard'} 
-            collapsed={!isSidebarOpen} 
-            onClick={() => setCurrentView('dashboard')}
-          />
-          <SidebarItem 
-            icon={<ListTodo size={20} />} 
-            label="My Tasks" 
-            active={currentView === 'tasks'} 
-            collapsed={!isSidebarOpen} 
-            onClick={() => setCurrentView('tasks')}
-          />
-          <SidebarItem 
-            icon={<CheckCircle2 size={20} />} 
-            label="Finished Tasks" 
-            active={currentView === 'finished'} 
-            collapsed={!isSidebarOpen} 
-            onClick={() => setCurrentView('finished')}
-          />
-          <SidebarItem 
-            icon={<Trophy size={20} />} 
-            label="Achievements" 
-            active={currentView === 'achievements'} 
-            collapsed={!isSidebarOpen} 
-            onClick={() => setCurrentView('achievements')}
-          />
-          <SidebarItem 
-            icon={<Settings size={20} />} 
-            label="Settings" 
-            active={currentView === 'settings'} 
-            collapsed={!isSidebarOpen} 
-            onClick={() => setCurrentView('settings')}
-          />
-        </nav>
+          <nav className="flex-1 p-4 space-y-2 overflow-y-auto no-scrollbar">
+            <SidebarItem 
+              icon={<LayoutDashboard size={20} />} 
+              label="Dashboard" 
+              active={currentView === 'dashboard'} 
+              collapsed={!isSidebarOpen} 
+              onClick={() => setCurrentView('dashboard')}
+            />
+            <SidebarItem 
+              icon={<ListTodo size={20} />} 
+              label="My Tasks" 
+              active={currentView === 'tasks'} 
+              collapsed={!isSidebarOpen} 
+              onClick={() => setCurrentView('tasks')}
+            />
+            <SidebarItem 
+              icon={<CheckCircle2 size={20} />} 
+              label="Finished Tasks" 
+              active={currentView === 'finished'} 
+              collapsed={!isSidebarOpen} 
+              onClick={() => setCurrentView('finished')}
+            />
+            <SidebarItem 
+              icon={<Trophy size={20} />} 
+              label="Achievements" 
+              active={currentView === 'achievements'} 
+              collapsed={!isSidebarOpen} 
+              onClick={() => setCurrentView('achievements')}
+            />
+            <SidebarItem 
+              icon={<Settings size={20} />} 
+              label="Settings" 
+              active={currentView === 'settings'} 
+              collapsed={!isSidebarOpen} 
+              onClick={() => setCurrentView('settings')}
+            />
+          </nav>
 
-        <button 
-          onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-          className="p-4 border-t-4 border-slate-900 hover:bg-slate-50 flex justify-center"
-        >
-          <Menu size={20} />
-        </button>
-      </aside>
+          <div className="mt-auto border-t-2 border-slate-900">
+            <SidebarItem 
+              icon={<LogOut size={20} />} 
+              label="Logout" 
+              active={false} 
+              collapsed={!isSidebarOpen} 
+              onClick={handleLogout}
+            />
+            <button 
+              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+              className="w-full p-4 border-t-2 border-slate-900 hover:bg-slate-50 flex justify-center transition-colors"
+            >
+              <Menu size={20} />
+            </button>
+          </div>
+        </aside>
 
       {/* Main Content */}
       <main className="flex-1 flex flex-col h-full overflow-hidden">
@@ -809,7 +894,10 @@ export default function App() {
                   <button 
                     onClick={async () => {
                       try {
-                        const res = await fetch('/api/test-email', { method: 'POST' });
+                        const res = await fetch('/api/test-email', { 
+                          method: 'POST',
+                          credentials: 'include'
+                        });
                         const data = await res.json();
                         if (data.success) {
                           alert('Test email sent successfully!');
@@ -839,8 +927,99 @@ export default function App() {
         initialTask={editingTask}
       />
       <ChatBot tasks={tasks} />
+      <AuthModal 
+        isOpen={isAuthModalOpen} 
+        mode={authMode} 
+        onClose={() => setIsAuthModalOpen(false)} 
+        onSubmit={handleAuth}
+        onSwitchMode={() => setAuthMode(authMode === 'login' ? 'signup' : 'login')}
+      />
       </div>
     </div>
+  );
+}
+
+function AuthModal({ isOpen, mode, onClose, onSubmit, onSwitchMode }: { 
+  isOpen: boolean, 
+  mode: 'login' | 'signup', 
+  onClose: () => void, 
+  onSubmit: (e: React.FormEvent) => void,
+  onSwitchMode: () => void 
+}) {
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={onClose}
+            className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+          />
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0, y: 20 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            exit={{ scale: 0.9, opacity: 0, y: 20 }}
+            className="relative bg-white border-4 border-slate-900 rounded-2xl shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] w-full max-w-md p-8"
+          >
+            <button onClick={onClose} className="absolute top-4 right-4 p-2 hover:bg-slate-100 rounded-lg transition-colors">
+              <CloseIcon size={20} />
+            </button>
+
+            <h2 className="text-3xl font-black uppercase mb-2">
+              {mode === 'login' ? 'Welcome Back' : 'Join the Club'}
+            </h2>
+            <p className="text-slate-500 font-medium mb-8">
+              {mode === 'login' ? 'Login to crush your goals.' : 'Start your productivity journey today.'}
+            </p>
+
+            <form onSubmit={onSubmit} className="space-y-4">
+              {mode === 'signup' && (
+                <div>
+                  <label className="block text-xs font-black uppercase mb-1">Full Name</label>
+                  <input 
+                    name="name" 
+                    required 
+                    className="w-full p-3 border-2 border-slate-900 rounded-lg focus:ring-2 ring-brand-primary outline-none font-bold"
+                    placeholder="John Doe"
+                  />
+                </div>
+              )}
+              <div>
+                <label className="block text-xs font-black uppercase mb-1">Email Address</label>
+                <input 
+                  name="email" 
+                  type="email" 
+                  required 
+                  className="w-full p-3 border-2 border-slate-900 rounded-lg focus:ring-2 ring-brand-primary outline-none font-bold"
+                  placeholder="john@example.com"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-black uppercase mb-1">Password</label>
+                <input 
+                  name="password" 
+                  type="password" 
+                  required 
+                  className="w-full p-3 border-2 border-slate-900 rounded-lg focus:ring-2 ring-brand-primary outline-none font-bold"
+                  placeholder="••••••••"
+                />
+              </div>
+              <button type="submit" className="vibrant-button bg-brand-primary w-full mt-4">
+                {mode === 'login' ? 'Login' : 'Create Account'}
+              </button>
+            </form>
+
+            <div className="mt-6 text-center">
+              <button onClick={onSwitchMode} className="text-sm font-bold text-slate-500 hover:text-brand-primary transition-colors">
+                {mode === 'login' ? "Don't have an account? Sign up" : "Already have an account? Login"}
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+    </AnimatePresence>
   );
 }
 
