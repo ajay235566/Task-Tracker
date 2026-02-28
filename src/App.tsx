@@ -64,13 +64,26 @@ export default function App() {
 
   // Check auth status on mount
   useEffect(() => {
+    // Cleanup legacy keys from previous versions
+    localStorage.removeItem('vibrant-user-profile');
+
     const checkAuth = async () => {
+      const token = localStorage.getItem('vibrant-token');
+      if (!token) {
+        setIsLoading(false);
+        return;
+      }
+
       try {
-        const res = await fetch('/api/auth/me', { credentials: 'include' });
+        const res = await fetch('/api/auth/me', { 
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
         if (res.ok) {
           const userData = await res.json();
           setUser(userData);
           setUserProfile(userData);
+        } else {
+          localStorage.removeItem('vibrant-token');
         }
       } catch (err) {
         console.error('Auth check failed:', err);
@@ -85,8 +98,11 @@ export default function App() {
   useEffect(() => {
     if (user) {
       const fetchData = async () => {
+        const token = localStorage.getItem('vibrant-token');
         try {
-          const tasksRes = await fetch('/api/tasks', { credentials: 'include' });
+          const tasksRes = await fetch('/api/tasks', { 
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
           if (tasksRes.ok) {
             const data = await tasksRes.json();
             setTasks(data);
@@ -122,11 +138,14 @@ export default function App() {
       setUserProfile(updatedProfile);
       
       // Sync profile to server
+      const token = localStorage.getItem('vibrant-token');
       fetch('/api/profile', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updatedProfile),
-        credentials: 'include'
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(updatedProfile)
       });
 
       if (newLevel > userProfile.level) {
@@ -180,6 +199,7 @@ export default function App() {
 
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
+    const token = localStorage.getItem('vibrant-token');
     const formData = new FormData(e.target as HTMLFormElement);
     const updatedProfile = {
       ...userProfile,
@@ -191,9 +211,11 @@ export default function App() {
     // Sync to server
     await fetch('/api/profile', {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(updatedProfile),
-      credentials: 'include'
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(updatedProfile)
     });
     
     // Add a success notification
@@ -209,6 +231,7 @@ export default function App() {
   };
 
   const handleCreateTask = async (taskData: Partial<Task>) => {
+    const token = localStorage.getItem('vibrant-token');
     if (editingTask) {
       const updatedTask = { ...editingTask, ...taskData } as Task;
       setTasks(prev => prev.map(t => t.id === editingTask.id ? updatedTask : t));
@@ -217,9 +240,11 @@ export default function App() {
       // Sync to server
       await fetch(`/api/tasks/${editingTask.id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updatedTask),
-        credentials: 'include'
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(updatedTask)
       });
     } else {
       const newTask: Task = {
@@ -236,18 +261,21 @@ export default function App() {
       // Sync to server
       await fetch('/api/tasks', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newTask),
-        credentials: 'include'
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(newTask)
       });
     }
   };
 
   const handleDeleteTask = async (id: string) => {
+    const token = localStorage.getItem('vibrant-token');
     setTasks(prev => prev.filter(t => t.id !== id));
     await fetch(`/api/tasks/${id}`, { 
       method: 'DELETE',
-      credentials: 'include'
+      headers: { 'Authorization': `Bearer ${token}` }
     });
   };
 
@@ -257,6 +285,7 @@ export default function App() {
   };
 
   const handleStatusChange = async (id: string, status: Task['status']) => {
+    const token = localStorage.getItem('vibrant-token');
     const task = tasks.find(t => t.id === id);
     if (!task) return;
 
@@ -265,7 +294,10 @@ export default function App() {
 
     await fetch(`/api/tasks/${id}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
       body: JSON.stringify(updatedTask),
     });
   };
@@ -309,19 +341,10 @@ export default function App() {
   const unreadCount = notifications.filter(n => !n.isRead).length;
 
   const handleLogout = async () => {
-    try {
-      const res = await fetch('/api/auth/logout', { 
-        method: 'POST',
-        credentials: 'include'
-      });
-      if (res.ok) {
-        setUser(null);
-        setUserProfile({ name: 'Guest', email: '', level: 1, xp: 0 });
-        setCurrentView('dashboard');
-      }
-    } catch (err) {
-      console.error('Logout failed:', err);
-    }
+    localStorage.removeItem('vibrant-token');
+    setUser(null);
+    setUserProfile({ name: 'Guest', email: '', level: 1, xp: 0 });
+    setCurrentView('dashboard');
   };
 
   const handleAuth = async (e: React.FormEvent) => {
@@ -334,12 +357,12 @@ export default function App() {
       const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-        credentials: 'include'
+        body: JSON.stringify(data)
       });
 
       if (res.ok) {
         const userData = await res.json();
+        localStorage.setItem('vibrant-token', userData.token);
         setUser(userData);
         setUserProfile(userData);
         setIsAuthModalOpen(false);
@@ -380,7 +403,7 @@ export default function App() {
 
   return (
     <div className="h-screen w-screen p-2 sm:p-4 bg-white">
-      <div className="h-full w-full flex bg-white border-2 sm:border-4 border-slate-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] sm:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] overflow-hidden rounded-xl relative">
+      <div className="h-full w-full flex bg-white border-2 sm:border-4 border-slate-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] sm:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] overflow-hidden rounded-[32px] relative">
         {/* Sidebar */}
         <aside className={cn(
           "bg-white border-r-2 sm:border-r-4 border-slate-900 transition-all duration-300 flex flex-col z-40",
@@ -449,7 +472,7 @@ export default function App() {
       {/* Main Content */}
       <main className="flex-1 flex flex-col h-full overflow-hidden">
         {/* Header */}
-        <header className="h-16 sm:h-20 bg-white border-b-2 sm:border-b-4 border-slate-900 flex items-center justify-between px-4 sm:px-8 shrink-0 gap-2">
+        <header className="h-14 sm:h-20 bg-white border-b-2 sm:border-b-4 border-slate-900 flex items-center justify-between px-3 sm:px-8 shrink-0 gap-2">
           <div className="flex items-center gap-2 sm:gap-4 flex-1 max-w-xl">
             <button 
               onClick={() => setIsSidebarOpen(!isSidebarOpen)}
@@ -465,7 +488,7 @@ export default function App() {
                   placeholder="Search..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-9 pr-3 py-1.5 sm:py-2 border-2 border-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-primary text-sm"
+                  className="w-full pl-8 sm:pl-9 pr-2 sm:pr-3 py-1 sm:py-2 border-2 border-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-primary text-xs sm:text-sm"
                 />
               </div>
               <div className="flex items-center gap-1 sm:gap-2">
@@ -478,7 +501,7 @@ export default function App() {
                   <div 
                     key={idx} 
                     className={cn(
-                      "h-8 sm:h-10 w-8 sm:w-10 shrink-0 border-2 border-slate-900 rounded overflow-hidden shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] bg-white",
+                      "h-7 sm:h-10 w-7 sm:w-10 shrink-0 border-2 border-slate-900 rounded overflow-hidden shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] bg-white",
                       idx > 0 && "hidden md:block", // Hide extra ones on mobile to save space
                       idx === 1 && "hidden sm:block" // Show second one on tablet
                     )}
@@ -626,7 +649,7 @@ export default function App() {
         </header>
 
         {/* View Content */}
-        <div className="flex-1 overflow-y-auto p-4 sm:p-8 pb-[100px] space-y-6 sm:space-y-8 no-scrollbar">
+        <div className="flex-1 overflow-y-auto p-3 sm:p-8 pb-24 sm:pb-[100px] space-y-4 sm:space-y-8 no-scrollbar">
           {currentView === 'dashboard' && (
             <section className="space-y-6">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
@@ -893,10 +916,11 @@ export default function App() {
                   </p>
                   <button 
                     onClick={async () => {
+                      const token = localStorage.getItem('vibrant-token');
                       try {
                         const res = await fetch('/api/test-email', { 
                           method: 'POST',
-                          credentials: 'include'
+                          headers: { 'Authorization': `Bearer ${token}` }
                         });
                         const data = await res.json();
                         if (data.success) {
@@ -1041,7 +1065,7 @@ function SidebarItem({ icon, label, active, collapsed, onClick }: { icon: React.
 
 function StatCard({ title, value, icon, color }: { title: string, value: number, icon: React.ReactNode, color: string }) {
   return (
-    <div className={cn("vibrant-card p-6 flex items-center justify-between", color)}>
+    <div className={cn("vibrant-card p-4 sm:p-6 flex items-center justify-between", color)}>
       <div>
         <p className="text-xs font-bold uppercase text-slate-500 mb-1">{title}</p>
         <p className="text-3xl font-black">{value}</p>

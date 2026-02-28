@@ -5,9 +5,8 @@ import nodemailer from 'nodemailer';
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import session from 'express-session';
 import bcrypt from 'bcryptjs';
-import SQLiteStoreFactory from 'connect-sqlite3';
+import jwt from 'jsonwebtoken';
 
 dotenv.config();
 
@@ -17,23 +16,10 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = 3000;
 
-const SQLiteStore = SQLiteStoreFactory(session);
+const JWT_SECRET = process.env.JWT_SECRET || 'vibrant-tasker-jwt-secret-stable-123';
 
 app.set('trust proxy', 1); // trust first proxy
 app.use(express.json());
-app.use(session({
-  store: new SQLiteStore({ db: 'sessions.db', dir: '.' }) as any,
-  secret: process.env.SESSION_SECRET || 'vibrant-tasker-secret-stable-key-123',
-  resave: true, // Force session to be saved back to the session store
-  saveUninitialized: true, // Force a session that is "uninitialized" to be saved to the store
-  rolling: true, // Force a session identifier cookie to be set on every response
-  cookie: {
-    secure: true, // Required for SameSite=None in iframe
-    sameSite: 'none', // Required for cross-origin iframe
-    httpOnly: true,
-    maxAge: 1000 * 60 * 60 * 24 * 7 // 1 week
-  }
-}));
 
 // Database setup
 const db = new Database('tasks.db');
@@ -97,10 +83,18 @@ const transporter = nodemailer.createTransport({
 
 // Auth Middleware
 const isAuthenticated = (req: any, res: any, next: any) => {
-  if ((req.session as any).userId) {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
+  const token = authHeader.split(' ')[1];
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET) as any;
+    req.userId = decoded.userId;
     next();
-  } else {
-    res.status(401).json({ error: 'Unauthorized' });
+  } catch (err) {
+    res.status(401).json({ error: 'Invalid token' });
   }
 };
 
@@ -115,8 +109,8 @@ app.post('/api/auth/signup', async (req, res) => {
     db.prepare('INSERT INTO users (id, name, email, password, createdAt) VALUES (?, ?, ?, ?, ?)')
       .run(userId, name, email, hashedPassword, createdAt);
     
-    (req.session as any).userId = userId;
-    res.status(201).json({ id: userId, name, email });
+    const token = jwt.sign({ userId }, JWT_SECRET, { expiresIn: '7d' });
+    res.status(201).json({ id: userId, name, email, token });
   } catch (err: any) {
     if (err.message.includes('UNIQUE constraint failed')) {
       res.status(400).json({ error: 'Email already exists' });
@@ -131,29 +125,37 @@ app.post('/api/auth/login', async (req, res) => {
   const user = db.prepare('SELECT * FROM users WHERE email = ?').get(email) as any;
   
   if (user && await bcrypt.compare(password, user.password)) {
-    (req.session as any).userId = user.id;
-    res.json({ id: user.id, name: user.name, email: user.email });
+    const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '7d' });
+    res.json({ id: user.id, name: user.name, email: user.email, token });
   } else {
     res.status(401).json({ error: 'Invalid credentials' });
   }
 });
 
 app.post('/api/auth/logout', (req, res) => {
-  req.session.destroy((err) => {
-    if (err) return res.status(500).json({ error: 'Logout failed' });
-    res.json({ success: true });
-  });
+  res.json({ success: true });
 });
 
-app.get('/api/auth/me', (req, res) => {
-  if (!(req.session as any).userId) return res.status(401).json({ error: 'Not logged in' });
-  const user = db.prepare('SELECT id, name, email, level, xp FROM users WHERE id = ?').get((req.session as any).userId) as any;
-  res.json(user);
+app.get('/api/auth/me', (req: any, res) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ error: 'Not logged in' });
+  }
+
+  const token = authHeader.split(' ')[1];
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET) as any;
+    const user = db.prepare('SELECT id, name, email, level, xp FROM users WHERE id = ?').get(decoded.userId) as any;
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    res.json(user);
+  } catch (err) {
+    res.status(401).json({ error: 'Invalid token' });
+  }
 });
 
 // Task Routes (User Specific)
 app.get('/api/tasks', isAuthenticated, (req: any, res) => {
-  const tasks = db.prepare('SELECT * FROM tasks WHERE user_id = ? ORDER BY createdAt DESC').all((req.session as any).userId);
+  const tasks = db.prepare('SELECT * FROM tasks WHERE user_id = ? ORDER BY createdAt DESC').all(req.userId);
   res.json(tasks.map((t: any) => ({ ...t, reminderSent: !!t.reminderSent })));
 });
 
@@ -162,7 +164,7 @@ app.post('/api/tasks', isAuthenticated, (req: any, res) => {
   db.prepare(`
     INSERT INTO tasks (id, user_id, title, description, status, priority, dueDate, createdAt)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-  `).run(id, (req.session as any).userId, title, description, status, priority, dueDate, createdAt);
+  `).run(id, req.userId, title, description, status, priority, dueDate, createdAt);
   res.status(201).json({ success: true });
 });
 
@@ -173,25 +175,25 @@ app.put('/api/tasks/:id', isAuthenticated, (req: any, res) => {
     UPDATE tasks 
     SET title = ?, description = ?, status = ?, priority = ?, dueDate = ?
     WHERE id = ? AND user_id = ?
-  `).run(title, description, status, priority, dueDate, id, (req.session as any).userId);
+  `).run(title, description, status, priority, dueDate, id, req.userId);
   res.json({ success: true });
 });
 
 app.delete('/api/tasks/:id', isAuthenticated, (req: any, res) => {
   const { id } = req.params;
-  db.prepare('DELETE FROM tasks WHERE id = ? AND user_id = ?').run(id, (req.session as any).userId);
+  db.prepare('DELETE FROM tasks WHERE id = ? AND user_id = ?').run(id, req.userId);
   res.json({ success: true });
 });
 
 app.put('/api/profile', isAuthenticated, (req: any, res) => {
   const { name, email, level, xp } = req.body;
   db.prepare('UPDATE users SET name = ?, email = ?, level = ?, xp = ? WHERE id = ?')
-    .run(name, email, level, xp, (req.session as any).userId);
+    .run(name, email, level, xp, req.userId);
   res.json({ success: true });
 });
 
 app.post('/api/test-email', isAuthenticated, async (req: any, res) => {
-  const user = db.prepare('SELECT email, name FROM users WHERE id = ?').get((req.session as any).userId) as any;
+  const user = db.prepare('SELECT email, name FROM users WHERE id = ?').get(req.userId) as any;
   
   if (!user || !user.email) {
     return res.status(400).json({ error: 'No user email found' });
