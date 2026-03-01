@@ -1,5 +1,4 @@
 import express from 'express';
-import { createServer as createViteServer } from 'vite';
 import nodemailer from 'nodemailer';
 import dotenv from 'dotenv';
 import path from 'path';
@@ -19,12 +18,37 @@ const PORT = 3000;
 const JWT_SECRET = process.env.JWT_SECRET || 'vibrant-tasker-jwt-secret-stable-123';
 
 // Supabase Setup
-const supabaseUrl = process.env.SUPABASE_URL || '';
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
-const supabase = createClient(supabaseUrl, supabaseKey);
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+if (!supabaseUrl || !supabaseKey) {
+  console.error('MISSING SUPABASE CREDENTIALS. Please set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in environment variables.');
+}
+
+const supabase = (supabaseUrl && supabaseKey) 
+  ? createClient(supabaseUrl, supabaseKey)
+  : null;
+
+// Helper to check supabase
+const getSupabase = () => {
+  if (!supabase) {
+    throw new Error('Supabase client not initialized. Check your environment variables.');
+  }
+  return supabase;
+};
 
 app.set('trust proxy', 1); // trust first proxy
 app.use(express.json());
+
+// Health check for Vercel
+app.get('/api/health', (req, res) => {
+  res.json({ 
+    status: 'ok', 
+    supabaseConfigured: !!supabase,
+    env: process.env.NODE_ENV,
+    vercel: !!process.env.VERCEL
+  });
+});
 
 // Nodemailer setup
 const transporter = nodemailer.createTransport({
@@ -62,7 +86,7 @@ app.post('/api/auth/signup', async (req, res) => {
     const userId = Math.random().toString(36).substr(2, 9);
     const createdAt = new Date().toISOString();
     
-    const { error } = await supabase
+    const { error } = await getSupabase()
       .from('users')
       .insert([{ id: userId, name, email, password: hashedPassword, createdAt }]);
 
@@ -82,17 +106,21 @@ app.post('/api/auth/signup', async (req, res) => {
 
 app.post('/api/auth/login', async (req, res) => {
   const { email, password } = req.body;
-  const { data: user, error } = await supabase
-    .from('users')
-    .select('*')
-    .eq('email', email)
-    .single();
-  
-  if (user && await bcrypt.compare(password, user.password)) {
-    const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '7d' });
-    res.json({ id: user.id, name: user.name, email: user.email, token });
-  } else {
-    res.status(401).json({ error: 'Invalid credentials' });
+  try {
+    const { data: user, error } = await getSupabase()
+      .from('users')
+      .select('*')
+      .eq('email', email)
+      .single();
+    
+    if (user && await bcrypt.compare(password, user.password)) {
+      const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '7d' });
+      res.json({ id: user.id, name: user.name, email: user.email, token });
+    } else {
+      res.status(401).json({ error: 'Invalid credentials' });
+    }
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
   }
 });
 
@@ -109,7 +137,7 @@ app.get('/api/auth/me', async (req: any, res) => {
   const token = authHeader.split(' ')[1];
   try {
     const decoded = jwt.verify(token, JWT_SECRET) as any;
-    const { data: user, error } = await supabase
+    const { data: user, error } = await getSupabase()
       .from('users')
       .select('id, name, email, level, xp')
       .eq('id', decoded.userId)
@@ -124,78 +152,102 @@ app.get('/api/auth/me', async (req: any, res) => {
 
 // Task Routes (User Specific)
 app.get('/api/tasks', isAuthenticated, async (req: any, res) => {
-  const { data: tasks, error } = await supabase
-    .from('tasks')
-    .select('*')
-    .eq('user_id', req.userId)
-    .order('createdAt', { ascending: false });
+  try {
+    const { data: tasks, error } = await getSupabase()
+      .from('tasks')
+      .select('*')
+      .eq('user_id', req.userId)
+      .order('createdAt', { ascending: false });
 
-  if (error) return res.status(500).json({ error: error.message });
-  res.json(tasks.map((t: any) => ({ ...t, reminderSent: !!t.reminderSent })));
+    if (error) return res.status(500).json({ error: error.message });
+    res.json(tasks.map((t: any) => ({ ...t, reminderSent: !!t.reminderSent })));
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 app.post('/api/tasks', isAuthenticated, async (req: any, res) => {
   const { id, title, description, status, priority, dueDate, createdAt } = req.body;
-  const { error } = await supabase
-    .from('tasks')
-    .insert([{ id, user_id: req.userId, title, description, status, priority, dueDate, createdAt }]);
+  try {
+    const { error } = await getSupabase()
+      .from('tasks')
+      .insert([{ id, user_id: req.userId, title, description, status, priority, dueDate, createdAt }]);
 
-  if (error) return res.status(500).json({ error: error.message });
-  res.status(201).json({ success: true });
+    if (error) return res.status(500).json({ error: error.message });
+    res.status(201).json({ success: true });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 app.put('/api/tasks/:id', isAuthenticated, async (req: any, res) => {
   const { id } = req.params;
   const { title, description, status, priority, dueDate } = req.body;
-  const { error } = await supabase
-    .from('tasks')
-    .update({ title, description, status, priority, dueDate })
-    .eq('id', id)
-    .eq('user_id', req.userId);
+  try {
+    const { error } = await getSupabase()
+      .from('tasks')
+      .update({ title, description, status, priority, dueDate })
+      .eq('id', id)
+      .eq('user_id', req.userId);
 
-  if (error) return res.status(500).json({ error: error.message });
-  res.json({ success: true });
+    if (error) return res.status(500).json({ error: error.message });
+    res.json({ success: true });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 app.delete('/api/tasks/:id', isAuthenticated, async (req: any, res) => {
   const { id } = req.params;
-  const { error } = await supabase
-    .from('tasks')
-    .delete()
-    .eq('id', id)
-    .eq('user_id', req.userId);
+  try {
+    const { error } = await getSupabase()
+      .from('tasks')
+      .delete()
+      .eq('id', id)
+      .eq('user_id', req.userId);
 
-  if (error) return res.status(500).json({ error: error.message });
-  res.json({ success: true });
+    if (error) return res.status(500).json({ error: error.message });
+    res.json({ success: true });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 app.put('/api/profile', isAuthenticated, async (req: any, res) => {
   const { name, email, level, xp } = req.body;
-  const { error } = await supabase
-    .from('users')
-    .update({ name, email, level, xp })
-    .eq('id', req.userId);
+  try {
+    const { error } = await getSupabase()
+      .from('users')
+      .update({ name, email, level, xp })
+      .eq('id', req.userId);
 
-  if (error) return res.status(500).json({ error: error.message });
-  res.json({ success: true });
+    if (error) return res.status(500).json({ error: error.message });
+    res.json({ success: true });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // Resume Routes
 app.get('/api/resumes', isAuthenticated, async (req: any, res) => {
-  const { data: resumes, error } = await supabase
-    .from('resumes')
-    .select('*')
-    .eq('user_id', req.userId)
-    .order('updatedAt', { ascending: false });
+  try {
+    const { data: resumes, error } = await getSupabase()
+      .from('resumes')
+      .select('*')
+      .eq('user_id', req.userId)
+      .order('updatedAt', { ascending: false });
 
-  if (error) return res.status(500).json({ error: error.message });
-  res.json(resumes.map((r: any) => ({
-    ...r,
-    experiences: typeof r.experiences === 'string' ? JSON.parse(r.experiences || '[]') : (r.experiences || []),
-    education: typeof r.education === 'string' ? JSON.parse(r.education || '[]') : (r.education || []),
-    skills: typeof r.skills === 'string' ? JSON.parse(r.skills || '[]') : (r.skills || []),
-    projects: typeof r.projects === 'string' ? JSON.parse(r.projects || '[]') : (r.projects || [])
-  })));
+    if (error) return res.status(500).json({ error: error.message });
+    res.json(resumes.map((r: any) => ({
+      ...r,
+      experiences: typeof r.experiences === 'string' ? JSON.parse(r.experiences || '[]') : (r.experiences || []),
+      education: typeof r.education === 'string' ? JSON.parse(r.education || '[]') : (r.education || []),
+      skills: typeof r.skills === 'string' ? JSON.parse(r.skills || '[]') : (r.skills || []),
+      projects: typeof r.projects === 'string' ? JSON.parse(r.projects || '[]') : (r.projects || [])
+    })));
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 app.post('/api/resumes', isAuthenticated, async (req: any, res) => {
@@ -205,17 +257,21 @@ app.post('/api/resumes', isAuthenticated, async (req: any, res) => {
     templateId, fontFamily, fontSize, margin, sectionSpacing, updatedAt 
   } = req.body;
   
-  const { error } = await supabase
-    .from('resumes')
-    .insert([{
-      id, user_id: req.userId, fullName, email, phone, location, summary, 
-      experiences: experiences, education: education, 
-      skills: skills, projects: projects, 
-      templateId, fontFamily, fontSize, margin, sectionSpacing, updatedAt
-    }]);
+  try {
+    const { error } = await getSupabase()
+      .from('resumes')
+      .insert([{
+        id, user_id: req.userId, fullName, email, phone, location, summary, 
+        experiences: experiences, education: education, 
+        skills: skills, projects: projects, 
+        templateId, fontFamily, fontSize, margin, sectionSpacing, updatedAt
+      }]);
 
-  if (error) return res.status(500).json({ error: error.message });
-  res.status(201).json({ success: true });
+    if (error) return res.status(500).json({ error: error.message });
+    res.status(201).json({ success: true });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 app.put('/api/resumes/:id', isAuthenticated, async (req: any, res) => {
@@ -226,49 +282,57 @@ app.put('/api/resumes/:id', isAuthenticated, async (req: any, res) => {
     templateId, fontFamily, fontSize, margin, sectionSpacing, updatedAt 
   } = req.body;
   
-  const { error } = await supabase
-    .from('resumes')
-    .update({
-      fullName, email, phone, location, summary, 
-      experiences: experiences, education: education, 
-      skills: skills, projects: projects, 
-      templateId, fontFamily, fontSize, margin, sectionSpacing, updatedAt
-    })
-    .eq('id', id)
-    .eq('user_id', req.userId);
+  try {
+    const { error } = await getSupabase()
+      .from('resumes')
+      .update({
+        fullName, email, phone, location, summary, 
+        experiences: experiences, education: education, 
+        skills: skills, projects: projects, 
+        templateId, fontFamily, fontSize, margin, sectionSpacing, updatedAt
+      })
+      .eq('id', id)
+      .eq('user_id', req.userId);
 
-  if (error) return res.status(500).json({ error: error.message });
-  res.json({ success: true });
+    if (error) return res.status(500).json({ error: error.message });
+    res.json({ success: true });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 app.delete('/api/resumes/:id', isAuthenticated, async (req: any, res) => {
   const { id } = req.params;
-  const { error } = await supabase
-    .from('resumes')
-    .delete()
-    .eq('id', id)
-    .eq('user_id', req.userId);
+  try {
+    const { error } = await getSupabase()
+      .from('resumes')
+      .delete()
+      .eq('id', id)
+      .eq('user_id', req.userId);
 
-  if (error) return res.status(500).json({ error: error.message });
-  res.json({ success: true });
+    if (error) return res.status(500).json({ error: error.message });
+    res.json({ success: true });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 app.post('/api/test-email', isAuthenticated, async (req: any, res) => {
-  const { data: user, error } = await supabase
-    .from('users')
-    .select('email, name')
-    .eq('id', req.userId)
-    .single();
-  
-  if (!user || !user.email) {
-    return res.status(400).json({ error: 'No user email found' });
-  }
-
-  if (!process.env.SMTP_USER) {
-    return res.status(400).json({ error: 'SMTP not configured in .env' });
-  }
-
   try {
+    const { data: user, error } = await getSupabase()
+      .from('users')
+      .select('email, name')
+      .eq('id', req.userId)
+      .single();
+    
+    if (!user || !user.email) {
+      return res.status(400).json({ error: 'No user email found' });
+    }
+
+    if (!process.env.SMTP_USER) {
+      return res.status(400).json({ error: 'SMTP not configured in .env' });
+    }
+
     await transporter.sendMail({
       from: process.env.SMTP_FROM || '"Vibrant Tasker" <reminders@example.com>',
       to: user.email,
@@ -290,7 +354,7 @@ setInterval(async () => {
     const tomorrowStr = tomorrow.toISOString().split('T')[0];
 
     // Find tasks due today or tomorrow that haven't had a reminder sent
-    const { data: tasksToRemind, error } = await supabase
+    const { data: tasksToRemind, error } = await getSupabase()
       .from('tasks')
       .select('*, users(email, name)')
       .lte('dueDate', tomorrowStr)
@@ -321,7 +385,7 @@ setInterval(async () => {
             `,
           });
 
-          await supabase
+          await getSupabase()
             .from('tasks')
             .update({ reminderSent: 1 })
             .eq('id', task.id);
@@ -340,6 +404,7 @@ setInterval(async () => {
 // Vite middleware for development
 async function startServer() {
   if (process.env.NODE_ENV !== 'production' && process.env.VERCEL !== '1') {
+    const { createServer: createViteServer } = await import('vite');
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: 'spa',
