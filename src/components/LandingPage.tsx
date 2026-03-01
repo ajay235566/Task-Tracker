@@ -211,7 +211,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onSignup }) =
       </section>
 
       {/* Resume Creation Section */}
-      <section className="py-12 sm:py-24 bg-white border-b-4 border-slate-900 overflow-hidden">
+      <section className="py-12 sm:py-10 bg-white border-b-4 border-slate-900 overflow-hidden">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="grid lg:grid-cols-2 gap-12 items-center mb-16">
             <motion.div
