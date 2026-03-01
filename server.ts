@@ -1,12 +1,12 @@
 import express from 'express';
 import { createServer as createViteServer } from 'vite';
-import Database from 'better-sqlite3';
 import nodemailer from 'nodemailer';
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import { createClient } from '@supabase/supabase-js';
 
 dotenv.config();
 
@@ -18,78 +18,13 @@ const PORT = 3000;
 
 const JWT_SECRET = process.env.JWT_SECRET || 'vibrant-tasker-jwt-secret-stable-123';
 
+// Supabase Setup
+const supabaseUrl = process.env.SUPABASE_URL || '';
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+const supabase = createClient(supabaseUrl, supabaseKey);
+
 app.set('trust proxy', 1); // trust first proxy
 app.use(express.json());
-
-// Database setup
-const db = new Database('tasks.db');
-db.exec(`
-  CREATE TABLE IF NOT EXISTS users (
-    id TEXT PRIMARY KEY,
-    name TEXT NOT NULL,
-    email TEXT UNIQUE NOT NULL,
-    password TEXT NOT NULL,
-    level INTEGER DEFAULT 1,
-    xp INTEGER DEFAULT 0,
-    createdAt TEXT NOT NULL
-  );
-
-  CREATE TABLE IF NOT EXISTS tasks (
-    id TEXT PRIMARY KEY,
-    user_id TEXT NOT NULL,
-    title TEXT NOT NULL,
-    description TEXT,
-    status TEXT NOT NULL,
-    priority TEXT NOT NULL,
-    dueDate TEXT NOT NULL,
-    createdAt TEXT NOT NULL,
-    reminderSent INTEGER DEFAULT 0,
-    FOREIGN KEY (user_id) REFERENCES users(id)
-  );
-
-  CREATE TABLE IF NOT EXISTS resumes (
-    id TEXT PRIMARY KEY,
-    user_id TEXT NOT NULL,
-    fullName TEXT NOT NULL,
-    email TEXT NOT NULL,
-    phone TEXT,
-    location TEXT,
-    summary TEXT,
-    experiences TEXT, -- JSON string
-    education TEXT, -- JSON string
-    skills TEXT, -- JSON string
-    projects TEXT, -- JSON string
-    templateId TEXT NOT NULL,
-    fontFamily TEXT NOT NULL,
-    fontSize INTEGER NOT NULL,
-    margin INTEGER NOT NULL,
-    sectionSpacing INTEGER NOT NULL,
-    updatedAt TEXT NOT NULL,
-    FOREIGN KEY (user_id) REFERENCES users(id)
-  );
-`);
-
-// Migration: Add user_id to tasks if it doesn't exist (for existing databases)
-const tableInfo = db.prepare("PRAGMA table_info(tasks)").all() as any[];
-const hasUserId = tableInfo.some(col => col.name === 'user_id');
-if (!hasUserId) {
-  try {
-    db.exec('ALTER TABLE tasks ADD COLUMN user_id TEXT');
-    console.log('Migration: Added user_id column to tasks table');
-  } catch (err) {
-    console.error('Migration failed (user_id):', err);
-  }
-}
-
-const hasReminderSent = tableInfo.some(col => col.name === 'reminderSent');
-if (!hasReminderSent) {
-  try {
-    db.exec('ALTER TABLE tasks ADD COLUMN reminderSent INTEGER DEFAULT 0');
-    console.log('Migration: Added reminderSent column to tasks table');
-  } catch (err) {
-    console.error('Migration failed (reminderSent):', err);
-  }
-}
 
 // Nodemailer setup
 const transporter = nodemailer.createTransport({
@@ -127,15 +62,19 @@ app.post('/api/auth/signup', async (req, res) => {
     const userId = Math.random().toString(36).substr(2, 9);
     const createdAt = new Date().toISOString();
     
-    db.prepare('INSERT INTO users (id, name, email, password, createdAt) VALUES (?, ?, ?, ?, ?)')
-      .run(userId, name, email, hashedPassword, createdAt);
+    const { error } = await supabase
+      .from('users')
+      .insert([{ id: userId, name, email, password: hashedPassword, createdAt }]);
+
+    if (error) throw error;
     
     const token = jwt.sign({ userId }, JWT_SECRET, { expiresIn: '7d' });
     res.status(201).json({ id: userId, name, email, token });
   } catch (err: any) {
-    if (err.message.includes('UNIQUE constraint failed')) {
+    if (err.code === '23505') { // Postgres unique constraint error
       res.status(400).json({ error: 'Email already exists' });
     } else {
+      console.error('Signup error:', err);
       res.status(500).json({ error: 'Failed to create user' });
     }
   }
@@ -143,7 +82,11 @@ app.post('/api/auth/signup', async (req, res) => {
 
 app.post('/api/auth/login', async (req, res) => {
   const { email, password } = req.body;
-  const user = db.prepare('SELECT * FROM users WHERE email = ?').get(email) as any;
+  const { data: user, error } = await supabase
+    .from('users')
+    .select('*')
+    .eq('email', email)
+    .single();
   
   if (user && await bcrypt.compare(password, user.password)) {
     const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '7d' });
@@ -157,7 +100,7 @@ app.post('/api/auth/logout', (req, res) => {
   res.json({ success: true });
 });
 
-app.get('/api/auth/me', (req: any, res) => {
+app.get('/api/auth/me', async (req: any, res) => {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return res.status(401).json({ error: 'Not logged in' });
@@ -166,7 +109,12 @@ app.get('/api/auth/me', (req: any, res) => {
   const token = authHeader.split(' ')[1];
   try {
     const decoded = jwt.verify(token, JWT_SECRET) as any;
-    const user = db.prepare('SELECT id, name, email, level, xp FROM users WHERE id = ?').get(decoded.userId) as any;
+    const { data: user, error } = await supabase
+      .from('users')
+      .select('id, name, email, level, xp')
+      .eq('id', decoded.userId)
+      .single();
+
     if (!user) return res.status(404).json({ error: 'User not found' });
     res.json(user);
   } catch (err) {
@@ -175,79 +123,102 @@ app.get('/api/auth/me', (req: any, res) => {
 });
 
 // Task Routes (User Specific)
-app.get('/api/tasks', isAuthenticated, (req: any, res) => {
-  const tasks = db.prepare('SELECT * FROM tasks WHERE user_id = ? ORDER BY createdAt DESC').all(req.userId);
+app.get('/api/tasks', isAuthenticated, async (req: any, res) => {
+  const { data: tasks, error } = await supabase
+    .from('tasks')
+    .select('*')
+    .eq('user_id', req.userId)
+    .order('createdAt', { ascending: false });
+
+  if (error) return res.status(500).json({ error: error.message });
   res.json(tasks.map((t: any) => ({ ...t, reminderSent: !!t.reminderSent })));
 });
 
-app.post('/api/tasks', isAuthenticated, (req: any, res) => {
+app.post('/api/tasks', isAuthenticated, async (req: any, res) => {
   const { id, title, description, status, priority, dueDate, createdAt } = req.body;
-  db.prepare(`
-    INSERT INTO tasks (id, user_id, title, description, status, priority, dueDate, createdAt)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-  `).run(id, req.userId, title, description, status, priority, dueDate, createdAt);
+  const { error } = await supabase
+    .from('tasks')
+    .insert([{ id, user_id: req.userId, title, description, status, priority, dueDate, createdAt }]);
+
+  if (error) return res.status(500).json({ error: error.message });
   res.status(201).json({ success: true });
 });
 
-app.put('/api/tasks/:id', isAuthenticated, (req: any, res) => {
+app.put('/api/tasks/:id', isAuthenticated, async (req: any, res) => {
   const { id } = req.params;
   const { title, description, status, priority, dueDate } = req.body;
-  db.prepare(`
-    UPDATE tasks 
-    SET title = ?, description = ?, status = ?, priority = ?, dueDate = ?
-    WHERE id = ? AND user_id = ?
-  `).run(title, description, status, priority, dueDate, id, req.userId);
+  const { error } = await supabase
+    .from('tasks')
+    .update({ title, description, status, priority, dueDate })
+    .eq('id', id)
+    .eq('user_id', req.userId);
+
+  if (error) return res.status(500).json({ error: error.message });
   res.json({ success: true });
 });
 
-app.delete('/api/tasks/:id', isAuthenticated, (req: any, res) => {
+app.delete('/api/tasks/:id', isAuthenticated, async (req: any, res) => {
   const { id } = req.params;
-  db.prepare('DELETE FROM tasks WHERE id = ? AND user_id = ?').run(id, req.userId);
+  const { error } = await supabase
+    .from('tasks')
+    .delete()
+    .eq('id', id)
+    .eq('user_id', req.userId);
+
+  if (error) return res.status(500).json({ error: error.message });
   res.json({ success: true });
 });
 
-app.put('/api/profile', isAuthenticated, (req: any, res) => {
+app.put('/api/profile', isAuthenticated, async (req: any, res) => {
   const { name, email, level, xp } = req.body;
-  db.prepare('UPDATE users SET name = ?, email = ?, level = ?, xp = ? WHERE id = ?')
-    .run(name, email, level, xp, req.userId);
+  const { error } = await supabase
+    .from('users')
+    .update({ name, email, level, xp })
+    .eq('id', req.userId);
+
+  if (error) return res.status(500).json({ error: error.message });
   res.json({ success: true });
 });
 
 // Resume Routes
-app.get('/api/resumes', isAuthenticated, (req: any, res) => {
-  const resumes = db.prepare('SELECT * FROM resumes WHERE user_id = ? ORDER BY updatedAt DESC').all(req.userId);
+app.get('/api/resumes', isAuthenticated, async (req: any, res) => {
+  const { data: resumes, error } = await supabase
+    .from('resumes')
+    .select('*')
+    .eq('user_id', req.userId)
+    .order('updatedAt', { ascending: false });
+
+  if (error) return res.status(500).json({ error: error.message });
   res.json(resumes.map((r: any) => ({
     ...r,
-    experiences: JSON.parse(r.experiences || '[]'),
-    education: JSON.parse(r.education || '[]'),
-    skills: JSON.parse(r.skills || '[]'),
-    projects: JSON.parse(r.projects || '[]')
+    experiences: typeof r.experiences === 'string' ? JSON.parse(r.experiences || '[]') : (r.experiences || []),
+    education: typeof r.education === 'string' ? JSON.parse(r.education || '[]') : (r.education || []),
+    skills: typeof r.skills === 'string' ? JSON.parse(r.skills || '[]') : (r.skills || []),
+    projects: typeof r.projects === 'string' ? JSON.parse(r.projects || '[]') : (r.projects || [])
   })));
 });
 
-app.post('/api/resumes', isAuthenticated, (req: any, res) => {
+app.post('/api/resumes', isAuthenticated, async (req: any, res) => {
   const { 
     id, fullName, email, phone, location, summary, 
     experiences, education, skills, projects, 
     templateId, fontFamily, fontSize, margin, sectionSpacing, updatedAt 
   } = req.body;
   
-  db.prepare(`
-    INSERT INTO resumes (
-      id, user_id, fullName, email, phone, location, summary, 
-      experiences, education, skills, projects, 
+  const { error } = await supabase
+    .from('resumes')
+    .insert([{
+      id, user_id: req.userId, fullName, email, phone, location, summary, 
+      experiences: experiences, education: education, 
+      skills: skills, projects: projects, 
       templateId, fontFamily, fontSize, margin, sectionSpacing, updatedAt
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `).run(
-    id, req.userId, fullName, email, phone, location, summary, 
-    JSON.stringify(experiences), JSON.stringify(education), 
-    JSON.stringify(skills), JSON.stringify(projects), 
-    templateId, fontFamily, fontSize, margin, sectionSpacing, updatedAt
-  );
+    }]);
+
+  if (error) return res.status(500).json({ error: error.message });
   res.status(201).json({ success: true });
 });
 
-app.put('/api/resumes/:id', isAuthenticated, (req: any, res) => {
+app.put('/api/resumes/:id', isAuthenticated, async (req: any, res) => {
   const { id } = req.params;
   const { 
     fullName, email, phone, location, summary, 
@@ -255,30 +226,39 @@ app.put('/api/resumes/:id', isAuthenticated, (req: any, res) => {
     templateId, fontFamily, fontSize, margin, sectionSpacing, updatedAt 
   } = req.body;
   
-  db.prepare(`
-    UPDATE resumes SET 
-      fullName = ?, email = ?, phone = ?, location = ?, summary = ?, 
-      experiences = ?, education = ?, skills = ?, projects = ?, 
-      templateId = ?, fontFamily = ?, fontSize = ?, margin = ?, sectionSpacing = ?, updatedAt = ?
-    WHERE id = ? AND user_id = ?
-  `).run(
-    fullName, email, phone, location, summary, 
-    JSON.stringify(experiences), JSON.stringify(education), 
-    JSON.stringify(skills), JSON.stringify(projects), 
-    templateId, fontFamily, fontSize, margin, sectionSpacing, updatedAt,
-    id, req.userId
-  );
+  const { error } = await supabase
+    .from('resumes')
+    .update({
+      fullName, email, phone, location, summary, 
+      experiences: experiences, education: education, 
+      skills: skills, projects: projects, 
+      templateId, fontFamily, fontSize, margin, sectionSpacing, updatedAt
+    })
+    .eq('id', id)
+    .eq('user_id', req.userId);
+
+  if (error) return res.status(500).json({ error: error.message });
   res.json({ success: true });
 });
 
-app.delete('/api/resumes/:id', isAuthenticated, (req: any, res) => {
+app.delete('/api/resumes/:id', isAuthenticated, async (req: any, res) => {
   const { id } = req.params;
-  db.prepare('DELETE FROM resumes WHERE id = ? AND user_id = ?').run(id, req.userId);
+  const { error } = await supabase
+    .from('resumes')
+    .delete()
+    .eq('id', id)
+    .eq('user_id', req.userId);
+
+  if (error) return res.status(500).json({ error: error.message });
   res.json({ success: true });
 });
 
 app.post('/api/test-email', isAuthenticated, async (req: any, res) => {
-  const user = db.prepare('SELECT email, name FROM users WHERE id = ?').get(req.userId) as any;
+  const { data: user, error } = await supabase
+    .from('users')
+    .select('email, name')
+    .eq('id', req.userId)
+    .single();
   
   if (!user || !user.email) {
     return res.status(400).json({ error: 'No user email found' });
@@ -310,25 +290,26 @@ setInterval(async () => {
     const tomorrowStr = tomorrow.toISOString().split('T')[0];
 
     // Find tasks due today or tomorrow that haven't had a reminder sent
-    const tasksToRemind = db.prepare(`
-      SELECT t.*, u.email, u.name as user_name 
-      FROM tasks t
-      JOIN users u ON t.user_id = u.id
-      WHERE t.dueDate <= ? AND t.status != 'done' AND t.reminderSent = 0
-    `).all(tomorrowStr) as any[];
+    const { data: tasksToRemind, error } = await supabase
+      .from('tasks')
+      .select('*, users(email, name)')
+      .lte('dueDate', tomorrowStr)
+      .neq('status', 'done')
+      .eq('reminderSent', 0);
 
-    if (tasksToRemind.length > 0 && process.env.SMTP_USER) {
+    if (tasksToRemind && tasksToRemind.length > 0 && process.env.SMTP_USER) {
       for (const task of tasksToRemind) {
+        const user = task.users as any;
         try {
           await transporter.sendMail({
             from: process.env.SMTP_FROM || '"Vibrant Tasker" <reminders@example.com>',
-            to: task.email,
+            to: user.email,
             subject: `Reminder: Task "${task.title}" is due soon!`,
-            text: `Hi ${task.user_name},\n\nThis is a reminder that your task "${task.title}" is due on ${task.dueDate}.\n\nDescription: ${task.description}\nPriority: ${task.priority}\n\nKeep up the great work!\n- Vibrant Tasker`,
+            text: `Hi ${user.name},\n\nThis is a reminder that your task "${task.title}" is due on ${task.dueDate}.\n\nDescription: ${task.description}\nPriority: ${task.priority}\n\nKeep up the great work!\n- Vibrant Tasker`,
             html: `
               <div style="font-family: sans-serif; padding: 20px; border: 4px solid #0f172a; border-radius: 12px;">
                 <h1 style="margin-top: 0;">Task Reminder</h1>
-                <p>Hi <strong>${task.user_name}</strong>,</p>
+                <p>Hi <strong>${user.name}</strong>,</p>
                 <p>This is a reminder that your task <strong>"${task.title}"</strong> is due on <strong>${task.dueDate}</strong>.</p>
                 <div style="background: #f8fafc; padding: 15px; border-left: 4px solid #10b981; margin: 20px 0;">
                   <p style="margin: 0;"><strong>Description:</strong> ${task.description}</p>
@@ -340,8 +321,12 @@ setInterval(async () => {
             `,
           });
 
-          db.prepare('UPDATE tasks SET reminderSent = 1 WHERE id = ?').run(task.id);
-          console.log(`Reminder sent for task: ${task.title} to ${task.email}`);
+          await supabase
+            .from('tasks')
+            .update({ reminderSent: 1 })
+            .eq('id', task.id);
+          
+          console.log(`Reminder sent for task: ${task.title} to ${user.email}`);
         } catch (mailError) {
           console.error('Failed to send email:', mailError);
         }
@@ -354,19 +339,29 @@ setInterval(async () => {
 
 // Vite middleware for development
 async function startServer() {
-  if (process.env.NODE_ENV !== 'production') {
+  if (process.env.NODE_ENV !== 'production' && process.env.VERCEL !== '1') {
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: 'spa',
     });
     app.use(vite.middlewares);
   } else {
-    app.use(express.static('dist'));
+    const distPath = path.join(process.cwd(), 'dist');
+    app.use(express.static(distPath));
+    // For Vercel, we need to serve index.html for SPA routes
+    app.get('*', (req, res, next) => {
+      if (req.path.startsWith('/api')) return next();
+      res.sendFile(path.join(distPath, 'index.html'));
+    });
   }
 
-  app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Server running on http://localhost:${PORT}`);
-  });
+  if (process.env.VERCEL !== '1') {
+    app.listen(PORT, '0.0.0.0', () => {
+      console.log(`Server running on http://localhost:${PORT}`);
+    });
+  }
 }
 
 startServer();
+
+export default app;
