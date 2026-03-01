@@ -46,6 +46,27 @@ db.exec(`
     reminderSent INTEGER DEFAULT 0,
     FOREIGN KEY (user_id) REFERENCES users(id)
   );
+
+  CREATE TABLE IF NOT EXISTS resumes (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    fullName TEXT NOT NULL,
+    email TEXT NOT NULL,
+    phone TEXT,
+    location TEXT,
+    summary TEXT,
+    experiences TEXT, -- JSON string
+    education TEXT, -- JSON string
+    skills TEXT, -- JSON string
+    projects TEXT, -- JSON string
+    templateId TEXT NOT NULL,
+    fontFamily TEXT NOT NULL,
+    fontSize INTEGER NOT NULL,
+    margin INTEGER NOT NULL,
+    sectionSpacing INTEGER NOT NULL,
+    updatedAt TEXT NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES users(id)
+  );
 `);
 
 // Migration: Add user_id to tasks if it doesn't exist (for existing databases)
@@ -189,6 +210,70 @@ app.put('/api/profile', isAuthenticated, (req: any, res) => {
   const { name, email, level, xp } = req.body;
   db.prepare('UPDATE users SET name = ?, email = ?, level = ?, xp = ? WHERE id = ?')
     .run(name, email, level, xp, req.userId);
+  res.json({ success: true });
+});
+
+// Resume Routes
+app.get('/api/resumes', isAuthenticated, (req: any, res) => {
+  const resumes = db.prepare('SELECT * FROM resumes WHERE user_id = ? ORDER BY updatedAt DESC').all(req.userId);
+  res.json(resumes.map((r: any) => ({
+    ...r,
+    experiences: JSON.parse(r.experiences || '[]'),
+    education: JSON.parse(r.education || '[]'),
+    skills: JSON.parse(r.skills || '[]'),
+    projects: JSON.parse(r.projects || '[]')
+  })));
+});
+
+app.post('/api/resumes', isAuthenticated, (req: any, res) => {
+  const { 
+    id, fullName, email, phone, location, summary, 
+    experiences, education, skills, projects, 
+    templateId, fontFamily, fontSize, margin, sectionSpacing, updatedAt 
+  } = req.body;
+  
+  db.prepare(`
+    INSERT INTO resumes (
+      id, user_id, fullName, email, phone, location, summary, 
+      experiences, education, skills, projects, 
+      templateId, fontFamily, fontSize, margin, sectionSpacing, updatedAt
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(
+    id, req.userId, fullName, email, phone, location, summary, 
+    JSON.stringify(experiences), JSON.stringify(education), 
+    JSON.stringify(skills), JSON.stringify(projects), 
+    templateId, fontFamily, fontSize, margin, sectionSpacing, updatedAt
+  );
+  res.status(201).json({ success: true });
+});
+
+app.put('/api/resumes/:id', isAuthenticated, (req: any, res) => {
+  const { id } = req.params;
+  const { 
+    fullName, email, phone, location, summary, 
+    experiences, education, skills, projects, 
+    templateId, fontFamily, fontSize, margin, sectionSpacing, updatedAt 
+  } = req.body;
+  
+  db.prepare(`
+    UPDATE resumes SET 
+      fullName = ?, email = ?, phone = ?, location = ?, summary = ?, 
+      experiences = ?, education = ?, skills = ?, projects = ?, 
+      templateId = ?, fontFamily = ?, fontSize = ?, margin = ?, sectionSpacing = ?, updatedAt = ?
+    WHERE id = ? AND user_id = ?
+  `).run(
+    fullName, email, phone, location, summary, 
+    JSON.stringify(experiences), JSON.stringify(education), 
+    JSON.stringify(skills), JSON.stringify(projects), 
+    templateId, fontFamily, fontSize, margin, sectionSpacing, updatedAt,
+    id, req.userId
+  );
+  res.json({ success: true });
+});
+
+app.delete('/api/resumes/:id', isAuthenticated, (req: any, res) => {
+  const { id } = req.params;
+  db.prepare('DELETE FROM resumes WHERE id = ? AND user_id = ?').run(id, req.userId);
   res.json({ success: true });
 });
 

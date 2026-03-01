@@ -42,3 +42,53 @@ export interface Badge {
   unlockedAt?: string;
   requirement: string;
 }
+
+export interface ResumeExperience {
+  id: string;
+  company: string;
+  position: string;
+  startDate: string;
+  endDate: string;
+  description: string;
+}
+
+export interface ResumeEducation {
+  id: string;
+  school: string;
+  degree: string;
+  graduationDate: string;
+}
+
+export interface ResumeProject {
+  id: string;
+  name: string;
+  description: string;
+  link?: string;
+}
+
+export interface ResumeData {
+  id: string;
+  userId: string;
+  fullName: string;
+  title: string;
+  email: string;
+  phone: string;
+  location: string;
+  summary: string;
+  experiences: ResumeExperience[];
+  education: ResumeEducation[];
+  skills: string[];
+  projects: ResumeProject[];
+  templateId: string;
+  fontFamily: string;
+  fontSize: number;
+  margin: number;
+  sectionSpacing: number;
+  updatedAt: string;
+}
+
+export interface ResumeTemplate {
+  id: string;
+  name: string;
+  thumbnail: string;
+}
