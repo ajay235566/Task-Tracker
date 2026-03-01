@@ -409,8 +409,8 @@ export default function App() {
           isSidebarOpen ? "w-64" : "w-0 sm:w-20 overflow-hidden"
         )}>
           <div className="p-6 flex items-center gap-3 border-b-2 border-slate-900 bg-brand-primary">
-            <div className="w-8 h-8 bg-black rounded flex items-center justify-center text-brand-primary font-black">T</div>
-            {isSidebarOpen && <span className="font-black text-xl tracking-tighter">TASKER</span>}
+            <div className="w-8 h-8 bg-black rounded flex items-center justify-center text-brand-primary font-black">N</div>
+            {isSidebarOpen && <span className="font-black text-xl tracking-tighter">Ajay</span>}
           </div>
 
           <nav className="flex-1 p-4 space-y-2 overflow-y-auto no-scrollbar">
@@ -494,8 +494,8 @@ export default function App() {
                 {[
                   "https://i.giphy.com/13HgwGsXF0aiGY.gif",
                   "https://i.giphy.com/slVWEctHZKvWU.gif",
-                  "https://i.giphy.com/UfR30gxLc5mx2.gif",
-                  "https://i.giphy.com/do6lyG5YvS67S.gif"
+                  "https://media4.giphy.com/media/v1.Y2lkPTc5MGI3NjExczVjbmttNWhxeWhnYXBhMXVraTVwODBxOXNpOXRsb3NiOTJxZzBodSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/3pTtbLJ7Jd0YM/giphy.gif",
+                  "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExZjA3ZHJkcjJ1b2J3dnR0bG0xamxlZjFlc3JlanNhMzJqems3amEyaiZlcD12MV9naWZzX3NlYXJjaCZjdD1n/xVxio2tNLAM5q/giphy.gif"
                 ].map((gif, idx) => (
                   <div 
                     key={idx} 

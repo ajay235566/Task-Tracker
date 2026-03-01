@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion } from 'motion/react';
 import { CheckCircle2, Zap, Bell, Trophy, ArrowRight } from 'lucide-react';
+import { cn } from '../lib/utils';
 
 interface LandingPageProps {
   onLogin: () => void;
@@ -14,12 +15,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onSignup }) =
       <nav className="sticky top-0 w-full bg-white/80 backdrop-blur-md border-b-2 sm:border-b-4 border-slate-900 z-50 px-3 sm:px-6 py-2 sm:py-4 flex justify-between items-center">
         <div className="flex items-center gap-1.5 sm:gap-2">
           <motion.div 
-            whileHover={{ rotate: 180 }}
+            whileHover={{ rotate: 360 }}
             className="w-8 h-8 sm:w-10 sm:h-10 bg-brand-primary border-2 border-slate-900 rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] flex items-center justify-center cursor-pointer"
           >
             <CheckCircle2 className="text-white" size={18} />
           </motion.div>
-          <span className="text-base sm:text-xl font-black tracking-tighter uppercase whitespace-nowrap">Vibrant Tasker</span>
+          <span className="text-base sm:text-xl font-black tracking-tighter uppercase whitespace-nowrap">Task It</span>
         </div>
         <div className="flex items-center gap-2 sm:gap-4">
           <button onClick={onLogin} className="text-xs sm:text-sm font-bold hover:text-brand-primary transition-colors hidden min-[400px]:block">Login</button>
@@ -232,8 +233,30 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onSignup }) =
       </section>
 
       {/* Footer */}
-      <footer className="py-12 px-6 text-center bg-white border-t-4 border-slate-900">
-        <p className="font-bold text-slate-900 uppercase tracking-widest text-sm">© 2026 Vibrant Tasker • Built for Doers</p>
+      <footer className="py-12 px-6 bg-white border-t-4 border-slate-900 flex flex-row items-center justify-center gap-4 flex-wrap">
+        <p className="font-bold text-slate-900 uppercase tracking-widest text-sm">
+          © 2026 Vibrant Tasker • Built for People Like Me
+        </p>
+
+        {/* Your GIF mapping logic remains here */}
+        {[
+          "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExbWczZzl0b21vbTRjZDZlbGd1a2VheDA3N3RwZ3FsaDd0NHFrZDF0eSZlcD12MV9naWZzX3NlYXJjaCZjdD1n/26ufnwz3wDUli7GU0/giphy.gif"
+        ].map((gif, idx) => (
+          <div 
+            key={idx} 
+            className={cn(
+              "h-20 w-20 shrink-0 border-2 border-slate-900 rounded overflow-hidden shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] bg-white",
+              idx > 0 && "hidden md:block"
+            )}
+          >
+            <img 
+              src={gif} 
+              alt={`Anime ${idx}`} 
+              className="w-full h-full object-cover" 
+              referrerPolicy="no-referrer" 
+            />
+          </div>
+        ))}
       </footer>
     </div>
   );
