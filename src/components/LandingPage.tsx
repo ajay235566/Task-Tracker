@@ -300,12 +300,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onSignup }) =
             <div className="relative overflow-hidden py-4 -mx-4 px-4">
               <div 
                 ref={carouselRef}
-                className="flex gap-6 overflow-x-auto pb-8 no-scrollbar snap-x scroll-smooth"
+                className="flex gap-6 overflow-x-auto pt-12 pb-8 no-scrollbar snap-x scroll-smooth"
               >
                 {TEMPLATE_LIST.slice(0, 12).map((template, i) => (
                   <motion.div
                     key={template.id}
-                    whileHover={{ y: -10 }}
+                    whileHover={{ y: -10, rotate: i % 2 === 0 ? 1 : -1 }}
                     className="flex-none w-48 sm:w-64 snap-start"
                   >
                     <div className="bg-white border-4 border-slate-900 rounded-2xl overflow-hidden shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] group cursor-pointer">
