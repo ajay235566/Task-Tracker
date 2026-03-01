@@ -12,8 +12,12 @@
       "destination": "server.ts"
     },
     {
-      "source": "/(.*)",
-      "destination": "server.ts"
+      "source": "/assets/(.*)",
+      "destination": "/assets/$1"
+    },
+    {
+      "source": "/((?!api/).*)",
+      "destination": "/index.html"
     }
   ]
 }
