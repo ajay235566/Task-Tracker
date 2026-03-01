@@ -6,7 +6,7 @@ export interface TemplateProps {
   data: ResumeData;
 }
 
-interface TemplateConfig {
+export interface TemplateConfig {
   id: string;
   name: string;
   accent: string;
@@ -16,7 +16,7 @@ interface TemplateConfig {
   layout: 'single' | 'sidebar' | 'timeline';
 }
 
-const TEMPLATE_CONFIGS: TemplateConfig[] = [
+export const TEMPLATE_CONFIGS: TemplateConfig[] = [
   { id: 'template-1',  name: "Executive",    accent: "#1a1a2e", secondary: "#e8c547", bg: "#ffffff", style: "classic",   layout: "single" },
   { id: 'template-2',  name: "Nordic",       accent: "#2d6a4f", secondary: "#95d5b2", bg: "#fafffe", style: "minimal",   layout: "single" },
   { id: 'template-3',  name: "Crimson",      accent: "#c1121f", secondary: "#fff0f0", bg: "#ffffff", style: "bold",      layout: "single" },

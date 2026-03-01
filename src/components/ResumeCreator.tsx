@@ -195,12 +195,59 @@ export const ResumeCreator: React.FC = () => {
         </div>
       </div>
 
+      {/* Info Section */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {[
+          { title: 'Live Preview', desc: 'See your changes in real-time as you type.' },
+          { title: 'Multiple Templates', desc: 'Choose from 20+ professional layouts.' },
+          { title: 'PDF Export', desc: 'Download your resume as a high-quality PDF.' }
+        ].map((item, i) => (
+          <div key={i} className="bg-slate-50 border-2 border-slate-900 p-4 rounded-xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+            <h3 className="font-black uppercase text-xs mb-1">{item.title}</h3>
+            <p className="text-[10px] font-bold text-slate-500">{item.desc}</p>
+          </div>
+        ))}
+      </div>
+
       {/* Main Content - Editor Only */}
-      <div className="max-w-4xl mx-auto">
-        <ResumeEditor 
-          data={currentResume} 
-          onChange={setCurrentResume} 
-        />
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+        <div className="lg:col-span-3">
+          <ResumeEditor 
+            data={currentResume} 
+            onChange={setCurrentResume} 
+          />
+        </div>
+        <div className="space-y-6">
+          <div className="bg-white border-4 border-slate-900 p-6 rounded-2xl shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]">
+            <h3 className="text-lg font-black uppercase mb-4 flex items-center gap-2">
+              <Sparkles size={18} className="text-brand-primary" /> Pro Tips
+            </h3>
+            <ul className="space-y-4">
+              {[
+                { title: 'Quantify Impact', desc: 'Use numbers (e.g., "Increased sales by 20%") to show your value.' },
+                { title: 'Keywords Matter', desc: 'Include skills mentioned in the job description for ATS.' },
+                { title: 'Keep it Concise', desc: 'Aim for 1-2 pages. Focus on your most relevant experience.' },
+                { title: 'Proofread', desc: 'Check for typos. A clean resume shows attention to detail.' }
+              ].map((tip, i) => (
+                <li key={i}>
+                  <p className="font-bold text-xs uppercase mb-1">{tip.title}</p>
+                  <p className="text-[10px] text-slate-500 font-medium leading-relaxed">{tip.desc}</p>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div className="bg-slate-900 text-white p-6 rounded-2xl shadow-[6px_6px_0px_0px_rgba(16,185,129,1)]">
+            <h3 className="text-lg font-black uppercase mb-2">Ready to Apply?</h3>
+            <p className="text-xs font-medium text-slate-400 mb-4">Export your resume as a PDF and start your journey.</p>
+            <button 
+              onClick={handleDownload}
+              className="w-full bg-brand-primary text-white py-3 rounded-xl font-black uppercase text-xs border-2 border-white shadow-[4px_4px_0px_0px_rgba(255,255,255,0.2)] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all"
+            >
+              Download PDF
+            </button>
+          </div>
+        </div>
       </div>
 
       {/* Preview Modal */}

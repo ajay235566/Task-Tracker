@@ -1,7 +1,85 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { motion } from 'motion/react';
-import { CheckCircle2, Zap, Bell, Trophy, ArrowRight } from 'lucide-react';
+import { CheckCircle2, Zap, Bell, Trophy, ArrowRight, FileText, Layout, Download, Palette, ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '../lib/utils';
+import { TEMPLATE_LIST, TEMPLATE_CONFIGS } from './ResumeTemplates';
+
+const ResumePreviewMini: React.FC<{ templateId: string }> = ({ templateId }) => {
+  const config = TEMPLATE_CONFIGS.find(c => c.id === templateId) || TEMPLATE_CONFIGS[0];
+
+  return (
+    <div className="w-full h-full relative overflow-hidden p-4 flex flex-col gap-2" style={{ backgroundColor: config.bg }}>
+      {config.layout === 'sidebar' ? (
+        <div className="flex h-full gap-3">
+          <div className="w-1/3 rounded-lg p-2 space-y-2" style={{ backgroundColor: config.accent }}>
+            <div className="w-8 h-8 rounded-full bg-white/20" />
+            <div className="h-2 bg-white/20 rounded w-full" />
+            <div className="h-2 bg-white/20 rounded w-2/3" />
+            <div className="pt-4 space-y-1">
+              <div className="h-1 bg-white/10 rounded w-full" />
+              <div className="h-1 bg-white/10 rounded w-full" />
+            </div>
+          </div>
+          <div className="flex-1 space-y-4">
+            <div className="space-y-2">
+              <div className="h-4 rounded w-3/4" style={{ backgroundColor: config.accent + '33' }} />
+              <div className="h-2 rounded w-1/2" style={{ backgroundColor: config.accent + '11' }} />
+            </div>
+            <div className="space-y-2">
+              <div className="h-2 rounded w-full" style={{ backgroundColor: config.accent + '22' }} />
+              <div className="h-2 rounded w-full" style={{ backgroundColor: config.accent + '22' }} />
+              <div className="h-2 rounded w-3/4" style={{ backgroundColor: config.accent + '22' }} />
+            </div>
+          </div>
+        </div>
+      ) : config.layout === 'timeline' ? (
+        <div className="h-full flex flex-col gap-4">
+          <div className="border-b-2 pb-2" style={{ borderColor: config.accent + '22' }}>
+            <div className="h-6 rounded w-1/2" style={{ backgroundColor: config.accent }} />
+          </div>
+          <div className="flex flex-1 gap-4">
+            <div className="w-1/4 space-y-2">
+              <div className="h-2 rounded w-full" style={{ backgroundColor: config.accent + '11' }} />
+              <div className="h-2 rounded w-full" style={{ backgroundColor: config.accent + '11' }} />
+            </div>
+            <div className="flex-1 relative pl-4 border-l-2" style={{ borderColor: config.accent + '11' }}>
+              {[1, 2, 3].map(i => (
+                <div key={i} className="mb-4 relative">
+                  <div className="absolute -left-[21px] top-1 w-3 h-3 rounded-full border-2 border-white" style={{ backgroundColor: config.accent }} />
+                  <div className="h-3 rounded w-3/4 mb-1" style={{ backgroundColor: config.accent + '22' }} />
+                  <div className="h-2 rounded w-1/2" style={{ backgroundColor: config.accent + '11' }} />
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="h-full space-y-6">
+          <div className="text-center space-y-2 border-b-2 pb-4" style={{ borderColor: config.accent + '11' }}>
+            <div className="h-6 rounded w-1/2 mx-auto" style={{ backgroundColor: config.accent }} />
+            <div className="h-2 rounded w-1/3 mx-auto" style={{ backgroundColor: config.accent + '44' }} />
+          </div>
+          <div className="space-y-4">
+            <div className="h-3 rounded w-1/4" style={{ backgroundColor: config.accent + '66' }} />
+            <div className="space-y-2">
+              <div className="h-2 rounded w-full" style={{ backgroundColor: config.accent + '11' }} />
+              <div className="h-2 rounded w-full" style={{ backgroundColor: config.accent + '11' }} />
+              <div className="h-2 rounded w-3/4" style={{ backgroundColor: config.accent + '11' }} />
+            </div>
+          </div>
+          <div className="space-y-4">
+            <div className="h-3 rounded w-1/4" style={{ backgroundColor: config.accent + '66' }} />
+            <div className="space-y-2">
+              <div className="h-2 rounded w-full" style={{ backgroundColor: config.accent + '11' }} />
+              <div className="h-2 rounded w-full" style={{ backgroundColor: config.accent + '11' }} />
+            </div>
+          </div>
+        </div>
+      )}
+      <div className="absolute bottom-0 left-0 right-0 h-1" style={{ backgroundColor: config.accent }} />
+    </div>
+  );
+};
 
 interface LandingPageProps {
   onLogin: () => void;
@@ -9,6 +87,20 @@ interface LandingPageProps {
 }
 
 export const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onSignup }) => {
+  const carouselRef = useRef<HTMLDivElement>(null);
+
+  const scroll = (direction: 'left' | 'right') => {
+    if (carouselRef.current) {
+      const { scrollLeft, clientWidth } = carouselRef.current;
+      const scrollAmount = clientWidth * 0.8;
+      const target = direction === 'left' ? scrollLeft - scrollAmount : scrollLeft + scrollAmount;
+      carouselRef.current.scrollTo({
+        left: target,
+        behavior: 'smooth'
+      });
+    }
+  };
+
   return (
     <div className="min-h-[calc(100vh-1rem)] sm:min-h-[calc(100vh-2rem)] bg-white text-slate-900 font-sans selection:bg-brand-primary/30 border-4 sm:border-[12px] border-slate-900 rounded-[24px] sm:rounded-[48px] m-2 sm:m-4 overflow-hidden">
       {/* Navigation */}
@@ -118,6 +210,124 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onSignup }) =
         </motion.div>
       </section>
 
+      {/* Resume Creation Section */}
+      <section className="py-12 sm:py-24 bg-white border-b-4 border-slate-900 overflow-hidden">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          <div className="grid lg:grid-cols-2 gap-12 items-center mb-16">
+            <motion.div
+              initial={{ opacity: 0, x: -30 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+            >
+              <div className="inline-block bg-indigo-100 border-2 border-slate-900 px-3 py-1 rounded-full text-xs font-black uppercase mb-4 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                New Feature
+              </div>
+              <h2 className="text-3xl sm:text-6xl font-black uppercase tracking-tighter mb-6 leading-none">
+                Build a <span className="text-indigo-600">Resume</span> that stands out.
+              </h2>
+              <p className="text-lg sm:text-xl text-slate-600 mb-8 font-medium">
+                Our professional resume builder helps you create a stunning CV in minutes. Choose from 20+ templates designed to get you hired.
+              </p>
+              
+              <div className="space-y-4 mb-8">
+                {[
+                  { icon: <Layout size={18} />, text: '20+ Professional Templates' },
+                  { icon: <Palette size={18} />, text: 'Customizable Colors & Fonts' },
+                  { icon: <Download size={18} />, text: 'One-click PDF Export' },
+                  { icon: <FileText size={18} />, text: 'ATS-Friendly Layouts' }
+                ].map((item, i) => (
+                  <div key={i} className="flex items-center gap-3 font-bold text-slate-700">
+                    <div className="w-8 h-8 bg-indigo-50 border-2 border-slate-900 rounded flex items-center justify-center text-indigo-600">
+                      {item.icon}
+                    </div>
+                    {item.text}
+                  </div>
+                ))}
+              </div>
+
+              <motion.button 
+                whileHover={{ scale: 1.05, x: 5 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={onSignup}
+                className="bg-indigo-600 text-white px-8 py-4 rounded-xl font-black text-lg border-4 border-slate-900 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px] transition-all flex items-center gap-2"
+              >
+                Create My Resume <ArrowRight size={20} />
+              </motion.button>
+            </motion.div>
+
+            <div className="relative">
+              <div className="absolute inset-0 bg-indigo-600/5 -rotate-3 rounded-3xl border-4 border-dashed border-slate-300" />
+              <motion.div 
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                className="relative bg-white border-4 border-slate-900 rounded-3xl p-4 sm:p-8 shadow-[12px_12px_0px_0px_rgba(79,70,229,1)]"
+              >
+                <div className="aspect-[3/4] bg-white rounded-xl border-2 border-slate-900 overflow-hidden relative group">
+                  <ResumePreviewMini templateId="template-1" />
+                  <div className="absolute inset-0 flex items-center justify-center bg-slate-900/10 backdrop-blur-[2px] group-hover:backdrop-blur-0 transition-all">
+                    <div className="bg-white border-4 border-slate-900 p-6 rounded-2xl shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] text-center max-w-[80%]">
+                      <FileText className="mx-auto mb-4 text-indigo-600" size={48} />
+                      <h3 className="text-xl font-black uppercase mb-2">Live Editor</h3>
+                      <p className="text-xs font-bold text-slate-500">Real-time preview as you type your details.</p>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            </div>
+          </div>
+
+          {/* Template Carousel */}
+          <div className="mt-20">
+            <div className="flex items-center justify-between mb-8">
+              <h3 className="text-xl sm:text-3xl font-black uppercase tracking-tighter">Popular Templates</h3>
+              <div className="flex gap-2">
+                <button 
+                  onClick={() => scroll('left')}
+                  className="w-10 h-10 border-2 border-slate-900 rounded-full flex items-center justify-center bg-white cursor-pointer hover:bg-slate-50 transition-colors shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:shadow-none active:translate-x-[2px] active:translate-y-[2px]"
+                >
+                  <ChevronLeft size={20} />
+                </button>
+                <button 
+                  onClick={() => scroll('right')}
+                  className="w-10 h-10 border-2 border-slate-900 rounded-full flex items-center justify-center bg-white cursor-pointer hover:bg-slate-50 transition-colors shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:shadow-none active:translate-x-[2px] active:translate-y-[2px]"
+                >
+                  <ChevronRight size={20} />
+                </button>
+              </div>
+            </div>
+
+            <div className="relative overflow-hidden py-4 -mx-4 px-4">
+              <div 
+                ref={carouselRef}
+                className="flex gap-6 overflow-x-auto pb-8 no-scrollbar snap-x scroll-smooth"
+              >
+                {TEMPLATE_LIST.slice(0, 12).map((template, i) => (
+                  <motion.div
+                    key={template.id}
+                    whileHover={{ y: -10 }}
+                    className="flex-none w-48 sm:w-64 snap-start"
+                  >
+                    <div className="bg-white border-4 border-slate-900 rounded-2xl overflow-hidden shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] group cursor-pointer">
+                      <div className="aspect-[3/4] bg-white relative overflow-hidden">
+                        <ResumePreviewMini templateId={template.id} />
+                        <div className="absolute inset-0 bg-slate-900/0 group-hover:bg-slate-900/5 transition-colors" />
+                      </div>
+                      <div className="p-4 border-t-4 border-slate-900 flex justify-between items-center bg-white">
+                        <span className="font-black uppercase text-xs sm:text-sm">{template.name}</span>
+                        <div className="w-6 h-6 bg-indigo-600 border-2 border-slate-900 rounded flex items-center justify-center">
+                          <ArrowRight size={12} className="text-white" />
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Deep Dive Section */}
       <section className="py-12 sm:py-20 bg-brand-accent border-y-2 sm:border-y-4 border-slate-900">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
@@ -142,6 +352,88 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onSignup }) =
                 <p className="text-sm text-slate-600 font-medium leading-relaxed">{item.desc}</p>
               </motion.div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Task Tracker Section */}
+      <section className="py-12 sm:py-24 bg-brand-primary/10 border-b-4 border-slate-900 overflow-hidden">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            <div className="order-2 lg:order-1 relative">
+              <div className="absolute inset-0 bg-brand-primary/5 rotate-3 rounded-3xl border-4 border-dashed border-slate-300" />
+              <motion.div 
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                className="relative bg-white border-4 border-slate-900 rounded-3xl p-4 sm:p-8 shadow-[12px_12px_0px_0px_rgba(16,185,129,1)]"
+              >
+                <div className="space-y-4">
+                  {[
+                    { title: 'Complete Project Proposal', priority: 'high', status: 'done', xp: '+50 XP' },
+                    { title: 'Review Team Feedback', priority: 'medium', status: 'in-progress', xp: '+20 XP' },
+                    { title: 'Update Resume', priority: 'high', status: 'todo', xp: '+50 XP' },
+                  ].map((task, i) => (
+                    <motion.div 
+                      key={i} 
+                      whileHover={{ x: 10, backgroundColor: '#f8fafc' }}
+                      className="bg-white border-2 border-slate-900 p-4 rounded-xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] flex items-center justify-between cursor-default gap-3"
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className={`w-6 h-6 rounded-full border-2 border-slate-900 shrink-0 ${task.status === 'done' ? 'bg-brand-primary' : 'bg-white'}`} />
+                        <div className="min-w-0">
+                          <span className="font-bold truncate block">{task.title}</span>
+                          <span className="text-[10px] font-black text-brand-primary">{task.xp}</span>
+                        </div>
+                      </div>
+                      <span className={`text-[10px] font-black uppercase px-2 py-1 rounded border-2 border-slate-900 shrink-0 ${task.priority === 'high' ? 'bg-rose-100' : 'bg-amber-100'}`}>
+                        {task.priority}
+                      </span>
+                    </motion.div>
+                  ))}
+                </div>
+              </motion.div>
+            </div>
+
+            <motion.div
+              initial={{ opacity: 0, x: 30 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              className="order-1 lg:order-2"
+            >
+              <div className="inline-block bg-emerald-100 border-2 border-slate-900 px-3 py-1 rounded-full text-xs font-black uppercase mb-4 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                Gamified Experience
+              </div>
+              <h2 className="text-3xl sm:text-6xl font-black uppercase tracking-tighter mb-6 leading-none">
+                Master your <span className="text-brand-primary">Tasks</span>.
+              </h2>
+              <p className="text-lg sm:text-xl text-slate-600 mb-8 font-medium">
+                Turn your to-do list into a game. Earn XP, level up, and unlock achievements as you crush your daily goals.
+              </p>
+              
+              <div className="grid grid-cols-2 gap-4 mb-8">
+                {[
+                  { label: 'XP Points', value: 'Earn for every task' },
+                  { label: 'Levels', value: 'Unlock new features' },
+                  { label: 'Badges', value: 'Show off your wins' },
+                  { label: 'Reminders', value: 'Never miss a beat' }
+                ].map((item, i) => (
+                  <div key={i} className="bg-white border-2 border-slate-900 p-3 rounded-xl shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                    <p className="text-[10px] font-black uppercase text-slate-400">{item.label}</p>
+                    <p className="text-xs font-bold text-slate-900">{item.value}</p>
+                  </div>
+                ))}
+              </div>
+
+              <motion.button 
+                whileHover={{ scale: 1.05, x: 5 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={onSignup}
+                className="bg-brand-primary text-white px-8 py-4 rounded-xl font-black text-lg border-4 border-slate-900 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px] transition-all flex items-center gap-2"
+              >
+                Start Tasking <ArrowRight size={20} />
+              </motion.button>
+            </motion.div>
           </div>
         </div>
       </section>
