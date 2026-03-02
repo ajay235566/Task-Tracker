@@ -418,10 +418,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onSignup }) =
                   { label: 'Badges', value: 'Show off your wins' },
                   { label: 'Reminders', value: 'Never miss a beat' }
                 ].map((item, i) => (
-                  <div key={i} className="bg-white border-2 border-slate-900 p-3 rounded-xl shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                  <motion.div key={i} whileHover={{ scale: 1.05, backgroundColor: '#f8fafc' }} className="bg-white border-2 border-slate-900 p-3 rounded-xl shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
                     <p className="text-[10px] font-black uppercase text-slate-400">{item.label}</p>
                     <p className="text-xs font-bold text-slate-900">{item.value}</p>
-                  </div>
+                  </motion.div>
                 ))}
               </div>
 
