@@ -502,8 +502,8 @@ export default function App() {
                 {[
                   "https://i.giphy.com/13HgwGsXF0aiGY.gif",
                   "https://i.giphy.com/slVWEctHZKvWU.gif",
-                  "https://i.giphy.com/UfR30gxLc5mx2.gif",
-                  "https://i.giphy.com/do6lyG5YvS67S.gif"
+                  "https://media.giphy.com/media/v1.Y2lkPWVjZjA1ZTQ3dTQ3cmZwOG81YndldDVzOGpzcmRyNGNmaGdrdjM5aGkyYXhyZTNsMyZlcD12MV9naWZzX3NlYXJjaCZjdD1n/xVxio2tNLAM5q/giphy.gif",
+                  "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExYzBja3Y1YzVtaWRrbml0b25qcjR1NDhmdHMwcmw2aXZibHJkMG16dCZlcD12MV9naWZzX3NlYXJjaCZjdD1n/3pTtbLJ7Jd0YM/giphy.gif"
                 ].map((gif, idx) => (
                   <div 
                     key={idx} 
