@@ -9,6 +9,7 @@ import { ResumeCreator } from './components/ResumeCreator';
 import { CustomDropdown } from './components/CustomDropdown';
 import { LandingPage } from './components/LandingPage';
 import { ScrambledText } from './components/ScrambledText';
+import { trackEvent, AnalyticsEvents } from './lib/analytics';
 import { cn } from './lib/utils';
 
 export default function App() {
@@ -49,6 +50,11 @@ export default function App() {
   const notificationRef = useRef<HTMLDivElement>(null);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
+
+  // Track page views
+  useEffect(() => {
+    trackEvent(AnalyticsEvents.PAGE_VIEW, { page_title: currentView });
+  }, [currentView]);
 
   // Close notifications and profile when clicking outside
   useEffect(() => {
@@ -222,7 +228,7 @@ export default function App() {
     setUserProfile(updatedProfile);
     
     // Sync to server
-    await fetch('/api/profile', {
+    const res = await fetch('/api/profile', {
       method: 'PUT',
       headers: { 
         'Content-Type': 'application/json',
@@ -230,6 +236,10 @@ export default function App() {
       },
       body: JSON.stringify(updatedProfile)
     });
+    
+    if (res.ok) {
+      trackEvent(AnalyticsEvents.SETTINGS_UPDATED);
+    }
     
     // Add a success notification
     const newNotification: Notification = {
@@ -270,6 +280,7 @@ export default function App() {
         createdAt: new Date().toISOString(),
       };
       setTasks(prev => [newTask, ...prev]);
+      trackEvent(AnalyticsEvents.TASK_CREATED, { priority: newTask.priority });
 
       // Sync to server
       await fetch('/api/tasks', {
@@ -304,6 +315,10 @@ export default function App() {
 
     const updatedTask = { ...task, status };
     setTasks(prev => prev.map(t => t.id === id ? updatedTask : t));
+
+    if (status === 'done') {
+      trackEvent(AnalyticsEvents.TASK_COMPLETED, { priority: task.priority });
+    }
 
     await fetch(`/api/tasks/${id}`, {
       method: 'PUT',
@@ -394,6 +409,12 @@ export default function App() {
           setUser(result);
           setUserProfile(result);
           setIsAuthModalOpen(false);
+          
+          if (authMode === 'login') {
+            trackEvent(AnalyticsEvents.LOGIN);
+          } else if (authMode === 'signup') {
+            trackEvent(AnalyticsEvents.SIGN_UP);
+          }
         }
       } else {
         const error = await res.json();

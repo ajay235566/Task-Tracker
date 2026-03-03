@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { ResumeData, ResumeTemplate } from '../types';
 import { TEMPLATES, TEMPLATE_LIST, TemplateThumbnail } from './ResumeTemplates';
 import { ResumeEditor } from './ResumeEditor';
+import { trackEvent, AnalyticsEvents } from '../lib/analytics';
 import { motion, AnimatePresence } from 'motion/react';
 import { Download, Save, Layout, Edit3, Eye, Check, ChevronLeft, ChevronRight, Sparkles } from 'lucide-react';
 import { domToPng } from 'modern-screenshot';
@@ -110,6 +111,7 @@ export const ResumeCreator: React.FC = () => {
       });
 
       if (res.ok) {
+        trackEvent(AnalyticsEvents.RESUME_CREATED);
         fetchResumes();
       }
     } catch (err) {
@@ -140,6 +142,7 @@ export const ResumeCreator: React.FC = () => {
       
       pdf.addImage(dataUrl, 'PNG', 0, 0, pdfWidth, pdfHeight);
       pdf.save(`${currentResume.fullName.replace(/\s+/g, '_')}_Resume.pdf`);
+      trackEvent(AnalyticsEvents.RESUME_DOWNLOADED, { template_id: currentResume.templateId });
     } catch (err) {
       console.error('Failed to generate PDF:', err);
       alert('Failed to generate PDF. Please try again.');

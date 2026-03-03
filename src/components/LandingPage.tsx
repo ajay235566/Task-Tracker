@@ -4,6 +4,7 @@ import { CheckCircle2, Zap, Bell, Trophy, ArrowRight, FileText, Layout, Download
 import { cn } from '../lib/utils';
 import { TEMPLATE_LIST, TEMPLATE_CONFIGS } from './ResumeTemplates';
 import { ScrambledText } from './ScrambledText';
+import { trackEvent } from '../lib/analytics';
 
 const ResumePreviewMini: React.FC<{ templateId: string }> = ({ templateId }) => {
   const config = TEMPLATE_CONFIGS.find(c => c.id === templateId) || TEMPLATE_CONFIGS[0];
@@ -116,11 +117,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onSignup }) =
           <span className="text-base sm:text-xl font-black tracking-tighter uppercase whitespace-nowrap">Task It</span>
         </div>
         <div className="flex items-center gap-2 sm:gap-4">
-          <button onClick={onLogin} className="text-xs sm:text-sm font-bold hover:text-brand-primary transition-colors hidden min-[400px]:block">Login</button>
+          <button onClick={() => { trackEvent('landing_login_click'); onLogin(); }} className="text-xs sm:text-sm font-bold hover:text-brand-primary transition-colors hidden min-[400px]:block">Login</button>
           <motion.button 
             whileHover={{ scale: 1.05, translateZ: 0 }}
             whileTap={{ scale: 0.95 }}
-            onClick={onSignup}
+            onClick={() => { trackEvent('landing_signup_click'); onSignup(); }}
             className="bg-slate-900 text-white px-3 sm:px-6 py-1.5 sm:py-2 rounded-lg font-bold text-[10px] sm:text-sm shadow-[2px_2px_0px_0px_rgba(16,185,129,1)] sm:shadow-[4px_4px_0px_0px_rgba(16,185,129,1)] hover:shadow-none hover:translate-x-[1px] sm:hover:translate-x-[2px] hover:translate-y-[1px] sm:hover:translate-y-[2px] transition-all"
           >
             Get Started
@@ -151,7 +152,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onSignup }) =
             <motion.button 
               whileHover={{ scale: 1.02, x: 4 }}
               whileTap={{ scale: 0.98 }}
-              onClick={onSignup}
+              onClick={() => { trackEvent('landing_hero_cta_click'); onSignup(); }}
               className="bg-brand-primary text-white px-6 sm:px-8 py-3 sm:py-4 rounded-xl font-black text-sm sm:text-lg border-4 border-slate-900 shadow-[8px_8px_0px_0px_rgba(15,23,42,1)] hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px] transition-all flex items-center justify-center gap-2 w-full sm:w-auto"
             >
               Start Tasking Now <ArrowRight size={20} />
