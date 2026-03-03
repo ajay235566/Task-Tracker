@@ -8,6 +8,7 @@ import { BadgeGallery } from './components/BadgeGallery';
 import { ResumeCreator } from './components/ResumeCreator';
 import { CustomDropdown } from './components/CustomDropdown';
 import { LandingPage } from './components/LandingPage';
+import { ScrambledText } from './components/ScrambledText';
 import { cn } from './lib/utils';
 
 export default function App() {
@@ -982,6 +983,16 @@ export default function App() {
               </div>
             </section>
           )}
+
+          <footer className="pt-12 pb-6 border-t-2 border-slate-100 flex flex-col items-center justify-center gap-4">
+            <div className="flex flex-col items-center">
+              <p className="text-[10.5px] font-black text-slate-900 uppercase tracking-tighter">
+                Created by{" "}
+                <ScrambledText text="Ajay Kumar Nallamothu" />
+              </p>
+            </div>
+            <p className="text-[10px] font-bold text-slate-400 uppercase">© 2026 Vibrant Tasker</p>
+          </footer>
         </div>
       </main>
 

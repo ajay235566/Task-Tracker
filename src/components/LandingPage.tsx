@@ -3,6 +3,7 @@ import { motion } from 'motion/react';
 import { CheckCircle2, Zap, Bell, Trophy, ArrowRight, FileText, Layout, Download, Palette, ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { TEMPLATE_LIST, TEMPLATE_CONFIGS } from './ResumeTemplates';
+import { ScrambledText } from './ScrambledText';
 
 const ResumePreviewMini: React.FC<{ templateId: string }> = ({ templateId }) => {
   const config = TEMPLATE_CONFIGS.find(c => c.id === templateId) || TEMPLATE_CONFIGS[0];
@@ -278,7 +279,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onSignup }) =
           </div>
 
           {/* Template Carousel */}
-          <div className="mt-12">
+          <div className="mt-20">
             <div className="flex items-center justify-between mb-8">
               <h3 className="text-xl sm:text-3xl font-black uppercase tracking-tighter">Popular Templates</h3>
               <div className="flex gap-2">
@@ -302,15 +303,16 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onSignup }) =
                 ref={carouselRef}
                 className="flex gap-6 overflow-x-auto pt-12 pb-8 no-scrollbar snap-x scroll-smooth"
               >
-                {TEMPLATE_LIST.slice(0, 20).map((template, i) => (
+                {TEMPLATE_LIST.slice(0, 12).map((template, i) => (
                   <motion.div
                     key={template.id}
+                    whileHover={{ y: -10, rotate: i % 2 === 0 ? 1 : -1 }}
                     className="flex-none w-48 sm:w-64 snap-start"
                   >
                     <div className="bg-white border-4 border-slate-900 rounded-2xl overflow-hidden shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] group cursor-pointer">
                       <div className="aspect-[3/4] bg-white relative overflow-hidden">
                         <ResumePreviewMini templateId={template.id} />
-                        <div className="absolute inset-0 bg-slate-900/0 transition-colors" />
+                        <div className="absolute inset-0 bg-slate-900/0 group-hover:bg-slate-900/5 transition-colors" />
                       </div>
                       <div className="p-4 border-t-4 border-slate-900 flex justify-between items-center bg-white">
                         <span className="font-black uppercase text-xs sm:text-sm">{template.name}</span>
@@ -328,7 +330,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onSignup }) =
       </section>
 
       {/* Deep Dive Section */}
-      <section className="py-8 sm:py-12 bg-brand-accent border-y-2 sm:border-y-4 border-slate-900">
+      <section className="py-12 sm:py-20 bg-brand-accent border-y-2 sm:border-y-4 border-slate-900">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="text-center mb-10 sm:mb-16">
             <h2 className="text-3xl sm:text-5xl font-black uppercase tracking-tighter mb-4">What can you do?</h2>
@@ -524,30 +526,39 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onSignup }) =
       </section>
 
       {/* Footer */}
-      <footer className="py-12 px-6 bg-white border-t-4 border-slate-900 flex flex-row items-center justify-center gap-4 flex-wrap">
-        <p className="font-bold text-slate-900 uppercase tracking-widest text-sm">
-          © 2026 Vibrant Tasker • Built for People Like Me
-        </p>
+      <footer className="py-12 px-6 bg-white border-t-4 border-slate-900 flex flex-col items-center justify-center gap-8">
+        <div className="flex flex-row items-center justify-center gap-4 flex-wrap">
+          <p className="font-bold text-slate-900 uppercase tracking-widest text-sm">
+            © 2026 Vibrant Tasker • Built for People Like Me
+          </p>
 
-        {/* Your GIF mapping logic remains here */}
-        {[
-          "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExbWczZzl0b21vbTRjZDZlbGd1a2VheDA3N3RwZ3FsaDd0NHFrZDF0eSZlcD12MV9naWZzX3NlYXJjaCZjdD1n/26ufnwz3wDUli7GU0/giphy.gif"
-        ].map((gif, idx) => (
-          <div 
-            key={idx} 
-            className={cn(
-              "h-20 w-20 shrink-0 border-2 border-slate-900 rounded overflow-hidden shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] bg-white",
-              idx > 0 && "hidden md:block"
-            )}
-          >
-            <img 
-              src={gif} 
-              alt={`Anime ${idx}`} 
-              className="w-full h-full object-cover" 
-              referrerPolicy="no-referrer" 
-            />
-          </div>
-        ))}
+          {/* Your GIF mapping logic remains here */}
+          {[
+            "https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExbWczZzl0b21vbTRjZDZlbGd1a2VheDA3N3RwZ3FsaDd0NHFrZDF0eSZlcD12MV9naWZzX3NlYXJjaCZjdD1n/26ufnwz3wDUli7GU0/giphy.gif"
+          ].map((gif, idx) => (
+            <div 
+              key={idx} 
+              className={cn(
+                "h-12.5 w-12.5 shrink-0 border-2 border-slate-900 rounded overflow-hidden shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] bg-white",
+                idx > 0 && "hidden md:block"
+              )}
+            >
+              <img 
+                src={gif} 
+                alt={`Anime ${idx}`} 
+                className="w-full h-full object-cover" 
+                referrerPolicy="no-referrer" 
+              />
+            </div>
+          ))}
+        </div>
+
+        <div className="text-center">
+          <p className="text-[13.5px] sm:text-[18px] font-black text-slate-900 uppercase tracking-tighter">
+            Created by{" "}
+            <ScrambledText text="Ajay Kumar Nallamothu" />
+          </p>
+        </div>
       </footer>
     </div>
   );
