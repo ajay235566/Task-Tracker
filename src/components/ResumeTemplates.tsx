@@ -38,6 +38,11 @@ export const TEMPLATE_CONFIGS: TemplateConfig[] = [
   { id: 'template-19', name: "Teal Storm",   accent: "#005f73", secondary: "#94d2bd", bg: "#f0fdfb", style: "fresh",     layout: "sidebar"},
   { id: 'template-20', name: "Plum Drama",   accent: "#4a0e4e", secondary: "#f72585", bg: "#ffffff", style: "dramatic",  layout: "single" },
   { id: 'template-21', name: "Marketing Timeline", accent: "#2b3d4f", secondary: "#8da2b5", bg: "#ffffff", style: "timeline", layout: "timeline" },
+  { id: 'template-22', name: "Industrial", accent: "#2b2d42", secondary: "#8d99ae", bg: "#f8f9fa", style: "bold", layout: "single" },
+  { id: 'template-23', name: "Pure Mono", accent: "#000000", secondary: "#e0e0e0", bg: "#ffffff", style: "minimal", layout: "single" },
+  { id: 'template-24', name: "Azure Sidebar", accent: "#0077b6", secondary: "#90e0ef", bg: "#ffffff", style: "modern", layout: "sidebar" },
+  { id: 'template-25', name: "Harvest", accent: "#6f4e37", secondary: "#ecb176", bg: "#fffaf0", style: "organic", layout: "single" },
+  { id: 'template-26', name: "Neon Tech", accent: "#00ff00", secondary: "#ff00ff", bg: "#0a0a0a", style: "tech", layout: "timeline" },
 ];
 
 const UniversalTemplate: React.FC<{ data: ResumeData, config: TemplateConfig }> = ({ data, config }) => {

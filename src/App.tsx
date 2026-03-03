@@ -13,8 +13,9 @@ import { cn } from './lib/utils';
 export default function App() {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-  const [authMode, setAuthMode] = useState<'login' | 'signup'>('login');
+  const [authMode, setAuthMode] = useState<'login' | 'signup' | 'forgot-password' | 'reset-password'>('login');
   const [isLoading, setIsLoading] = useState(true);
+  const [resetToken, setResetToken] = useState<string | null>(null);
 
   const [tasks, setTasks] = useState<Task[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -68,6 +69,17 @@ export default function App() {
     localStorage.removeItem('vibrant-user-profile');
 
     const checkAuth = async () => {
+      // Check for reset token in URL
+      const urlParams = new URLSearchParams(window.location.search);
+      const tokenInUrl = urlParams.get('resetToken');
+      if (tokenInUrl) {
+        setResetToken(tokenInUrl);
+        setAuthMode('reset-password');
+        setIsAuthModalOpen(true);
+        // Clean up URL
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
+
       const token = localStorage.getItem('vibrant-token');
       if (!token) {
         setIsLoading(false);
@@ -353,7 +365,15 @@ export default function App() {
     const data = Object.fromEntries(formData);
     
     try {
-      const endpoint = authMode === 'login' ? '/api/auth/login' : '/api/auth/signup';
+      let endpoint = '';
+      if (authMode === 'login') endpoint = '/api/auth/login';
+      else if (authMode === 'signup') endpoint = '/api/auth/signup';
+      else if (authMode === 'forgot-password') endpoint = '/api/auth/forgot-password';
+      else if (authMode === 'reset-password') {
+        endpoint = '/api/auth/reset-password';
+        (data as any).token = resetToken;
+      }
+
       const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -361,11 +381,19 @@ export default function App() {
       });
 
       if (res.ok) {
-        const userData = await res.json();
-        localStorage.setItem('vibrant-token', userData.token);
-        setUser(userData);
-        setUserProfile(userData);
-        setIsAuthModalOpen(false);
+        const result = await res.json();
+        if (authMode === 'forgot-password') {
+          alert('Reset link sent! Check your email.');
+          setAuthMode('login');
+        } else if (authMode === 'reset-password') {
+          alert('Password reset successfully! You can now login.');
+          setAuthMode('login');
+        } else {
+          localStorage.setItem('vibrant-token', result.token);
+          setUser(result);
+          setUserProfile(result);
+          setIsAuthModalOpen(false);
+        }
       } else {
         const error = await res.json();
         alert(error.error || 'Authentication failed');
@@ -395,7 +423,10 @@ export default function App() {
           mode={authMode} 
           onClose={() => setIsAuthModalOpen(false)} 
           onSubmit={handleAuth}
-          onSwitchMode={() => setAuthMode(authMode === 'login' ? 'signup' : 'login')}
+          onSwitchMode={(newMode) => {
+            if (newMode) setAuthMode(newMode);
+            else setAuthMode(authMode === 'login' ? 'signup' : 'login');
+          }}
         />
       </>
     );
@@ -975,10 +1006,10 @@ export default function App() {
 
 function AuthModal({ isOpen, mode, onClose, onSubmit, onSwitchMode }: { 
   isOpen: boolean, 
-  mode: 'login' | 'signup', 
+  mode: 'login' | 'signup' | 'forgot-password' | 'reset-password', 
   onClose: () => void, 
   onSubmit: (e: React.FormEvent) => void,
-  onSwitchMode: () => void 
+  onSwitchMode: (newMode?: 'login' | 'signup' | 'forgot-password') => void 
 }) {
   return (
     <AnimatePresence>
@@ -1002,10 +1033,14 @@ function AuthModal({ isOpen, mode, onClose, onSubmit, onSwitchMode }: {
             </button>
 
             <h2 className="text-3xl font-black uppercase mb-2">
-              {mode === 'login' ? 'Welcome Back' : 'Join the Club'}
+              {mode === 'login' ? 'Welcome Back' : 
+               mode === 'signup' ? 'Join the Club' : 
+               mode === 'forgot-password' ? 'Forgot Password' : 'Reset Password'}
             </h2>
             <p className="text-slate-500 font-medium mb-8">
-              {mode === 'login' ? 'Login to crush your goals.' : 'Start your productivity journey today.'}
+              {mode === 'login' ? 'Login to crush your goals.' : 
+               mode === 'signup' ? 'Start your productivity journey today.' : 
+               mode === 'forgot-password' ? 'Enter your email to receive a reset link.' : 'Enter your new password below.'}
             </p>
 
             <form onSubmit={onSubmit} className="space-y-4">
@@ -1020,34 +1055,56 @@ function AuthModal({ isOpen, mode, onClose, onSubmit, onSwitchMode }: {
                   />
                 </div>
               )}
-              <div>
-                <label className="block text-xs font-black uppercase mb-1">Email Address</label>
-                <input 
-                  name="email" 
-                  type="email" 
-                  required 
-                  className="w-full p-3 border-2 border-slate-900 rounded-lg focus:ring-2 ring-brand-primary outline-none font-bold"
-                  placeholder="john@example.com"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-black uppercase mb-1">Password</label>
-                <input 
-                  name="password" 
-                  type="password" 
-                  required 
-                  className="w-full p-3 border-2 border-slate-900 rounded-lg focus:ring-2 ring-brand-primary outline-none font-bold"
-                  placeholder="••••••••"
-                />
-              </div>
+              {(mode === 'login' || mode === 'signup' || mode === 'forgot-password') && (
+                <div>
+                  <label className="block text-xs font-black uppercase mb-1">Email Address</label>
+                  <input 
+                    name="email" 
+                    type="email" 
+                    required 
+                    className="w-full p-3 border-2 border-slate-900 rounded-lg focus:ring-2 ring-brand-primary outline-none font-bold"
+                    placeholder="john@example.com"
+                  />
+                </div>
+              )}
+              {(mode === 'login' || mode === 'signup' || mode === 'reset-password') && (
+                <div>
+                  <label className="block text-xs font-black uppercase mb-1">
+                    {mode === 'reset-password' ? 'New Password' : 'Password'}
+                  </label>
+                  <input 
+                    name="password" 
+                    type="password" 
+                    required 
+                    className="w-full p-3 border-2 border-slate-900 rounded-lg focus:ring-2 ring-brand-primary outline-none font-bold"
+                    placeholder="••••••••"
+                  />
+                </div>
+              )}
+              {mode === 'login' && (
+                <div className="text-right">
+                  <button 
+                    type="button"
+                    onClick={() => onSwitchMode('forgot-password')}
+                    className="text-xs font-bold text-slate-400 hover:text-brand-primary transition-colors"
+                  >
+                    Forgot Password?
+                  </button>
+                </div>
+              )}
               <button type="submit" className="vibrant-button bg-brand-primary w-full mt-4">
-                {mode === 'login' ? 'Login' : 'Create Account'}
+                {mode === 'login' ? 'Login' : 
+                 mode === 'signup' ? 'Create Account' : 
+                 mode === 'forgot-password' ? 'Send Reset Link' : 'Update Password'}
               </button>
             </form>
 
             <div className="mt-6 text-center">
-              <button onClick={onSwitchMode} className="text-sm font-bold text-slate-500 hover:text-brand-primary transition-colors">
-                {mode === 'login' ? "Don't have an account? Sign up" : "Already have an account? Login"}
+              <button onClick={() => onSwitchMode()} className="text-sm font-bold text-slate-500 hover:text-brand-primary transition-colors">
+                {mode === 'login' ? "Don't have an account? Sign up" : 
+                 mode === 'forgot-password' ? "Back to Login" :
+                 mode === 'reset-password' ? "Back to Login" :
+                 "Already have an account? Login"}
               </button>
             </div>
           </motion.div>

@@ -278,7 +278,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onSignup }) =
           </div>
 
           {/* Template Carousel */}
-          <div className="mt-20">
+          <div className="mt-12">
             <div className="flex items-center justify-between mb-8">
               <h3 className="text-xl sm:text-3xl font-black uppercase tracking-tighter">Popular Templates</h3>
               <div className="flex gap-2">
@@ -302,16 +302,15 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onSignup }) =
                 ref={carouselRef}
                 className="flex gap-6 overflow-x-auto pt-12 pb-8 no-scrollbar snap-x scroll-smooth"
               >
-                {TEMPLATE_LIST.slice(0, 12).map((template, i) => (
+                {TEMPLATE_LIST.slice(0, 20).map((template, i) => (
                   <motion.div
                     key={template.id}
-                    whileHover={{ y: -10, rotate: i % 2 === 0 ? 1 : -1 }}
                     className="flex-none w-48 sm:w-64 snap-start"
                   >
                     <div className="bg-white border-4 border-slate-900 rounded-2xl overflow-hidden shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] group cursor-pointer">
                       <div className="aspect-[3/4] bg-white relative overflow-hidden">
                         <ResumePreviewMini templateId={template.id} />
-                        <div className="absolute inset-0 bg-slate-900/0 group-hover:bg-slate-900/5 transition-colors" />
+                        <div className="absolute inset-0 bg-slate-900/0 transition-colors" />
                       </div>
                       <div className="p-4 border-t-4 border-slate-900 flex justify-between items-center bg-white">
                         <span className="font-black uppercase text-xs sm:text-sm">{template.name}</span>
@@ -329,7 +328,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onSignup }) =
       </section>
 
       {/* Deep Dive Section */}
-      <section className="py-12 sm:py-20 bg-brand-accent border-y-2 sm:border-y-4 border-slate-900">
+      <section className="py-8 sm:py-12 bg-brand-accent border-y-2 sm:border-y-4 border-slate-900">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="text-center mb-10 sm:mb-16">
             <h2 className="text-3xl sm:text-5xl font-black uppercase tracking-tighter mb-4">What can you do?</h2>

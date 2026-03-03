@@ -104,6 +104,96 @@ app.post('/api/auth/signup', async (req, res) => {
   }
 });
 
+app.post('/api/auth/forgot-password', async (req, res) => {
+  const { email } = req.body;
+  try {
+    const { data: user, error } = await getSupabase()
+      .from('users')
+      .select('id, name, email')
+      .eq('email', email)
+      .single();
+
+    if (!user) {
+      // Don't reveal if user exists or not for security, but for this app we can be more helpful
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const resetToken = Math.random().toString(36).substr(2, 15);
+    const expiresAt = new Date(Date.now() + 3600000).toISOString(); // 1 hour
+
+    const { error: tokenError } = await getSupabase()
+      .from('users')
+      .update({ resetToken, resetTokenExpires: expiresAt })
+      .eq('id', user.id);
+
+    if (tokenError) throw tokenError;
+
+    if (process.env.SMTP_USER) {
+      const appUrl = process.env.APP_URL || 'http://localhost:3000';
+      const resetLink = `${appUrl}?resetToken=${resetToken}`;
+
+      await transporter.sendMail({
+        from: process.env.SMTP_FROM || '"Vibrant Tasker" <auth@example.com>',
+        to: user.email,
+        subject: 'Reset Your Password - Vibrant Tasker',
+        text: `Hi ${user.name},\n\nYou requested a password reset. Click the link below to reset your password:\n\n${resetLink}\n\nThis link will expire in 1 hour.`,
+        html: `
+          <div style="font-family: sans-serif; padding: 20px; border: 4px solid #0f172a; border-radius: 12px;">
+            <h1 style="margin-top: 0;">Password Reset</h1>
+            <p>Hi <strong>${user.name}</strong>,</p>
+            <p>You requested a password reset for your Vibrant Tasker account.</p>
+            <div style="margin: 30px 0;">
+              <a href="${resetLink}" style="background: #10b981; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold; border: 2px solid #0f172a; box-shadow: 4px 4px 0px 0px #0f172a;">Reset Password</a>
+            </div>
+            <p>If you didn't request this, you can safely ignore this email.</p>
+            <p style="color: #64748b; font-size: 12px;">- Vibrant Tasker Team</p>
+          </div>
+        `,
+      });
+    } else {
+      console.log('SMTP not configured. Reset Token:', resetToken);
+    }
+
+    res.json({ success: true, message: 'Reset link sent to your email' });
+  } catch (err: any) {
+    console.error('Forgot password error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/auth/reset-password', async (req, res) => {
+  const { token, password } = req.body;
+  try {
+    const { data: user, error } = await getSupabase()
+      .from('users')
+      .select('id')
+      .eq('resetToken', token)
+      .gt('resetTokenExpires', new Date().toISOString())
+      .single();
+
+    if (!user) {
+      return res.status(400).json({ error: 'Invalid or expired reset token' });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const { error: updateError } = await getSupabase()
+      .from('users')
+      .update({ 
+        password: hashedPassword, 
+        resetToken: null, 
+        resetTokenExpires: null 
+      })
+      .eq('id', user.id);
+
+    if (updateError) throw updateError;
+
+    res.json({ success: true, message: 'Password reset successfully' });
+  } catch (err: any) {
+    console.error('Reset password error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.post('/api/auth/login', async (req, res) => {
   const { email, password } = req.body;
   try {
