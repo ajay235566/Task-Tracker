@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Plus, LayoutDashboard, ListTodo, Settings, Search, Bell, CheckCircle2, Clock, AlertCircle, Menu, X as CloseIcon, Info, CheckCircle, LogOut, Trophy, ArrowUpDown, FileText } from 'lucide-react';
+import { Plus, LayoutDashboard, ListTodo, Settings, Search, Bell, CheckCircle2, Clock, AlertCircle, Menu, X as CloseIcon, Info, CheckCircle, LogOut, Trophy, ArrowUpDown, FileText, Mail } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Task, Notification, UserProfile, Badge } from './types';
 import { TaskCard } from './components/TaskCard';
 import { TaskModal } from './components/TaskModal';
 import { BadgeGallery } from './components/BadgeGallery';
 import { ResumeCreator } from './components/ResumeCreator';
+import { ContactPage } from './components/ContactPage';
 import { CustomDropdown } from './components/CustomDropdown';
 import { LandingPage } from './components/LandingPage';
 import { ScrambledText } from './components/ScrambledText';
@@ -15,6 +16,7 @@ import { cn } from './lib/utils';
 export default function App() {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [showContactUnauth, setShowContactUnauth] = useState(false);
   const [authMode, setAuthMode] = useState<'login' | 'signup' | 'forgot-password' | 'reset-password'>('login');
   const [isLoading, setIsLoading] = useState(true);
   const [resetToken, setResetToken] = useState<string | null>(null);
@@ -25,7 +27,7 @@ export default function App() {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState<'all' | 'todo' | 'in-progress' | 'done'>('all');
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [currentView, setCurrentView] = useState<'dashboard' | 'tasks' | 'settings' | 'achievements' | 'finished' | 'resume'>('dashboard');
+  const [currentView, setCurrentView] = useState<'dashboard' | 'tasks' | 'settings' | 'achievements' | 'finished' | 'resume' | 'contact'>('dashboard');
   const [sortBy, setSortBy] = useState<'priority' | 'dueDate' | 'none'>('none');
   const [priorityFilter, setPriorityFilter] = useState<'all' | 'low' | 'medium' | 'high'>('all');
   
@@ -436,10 +438,46 @@ export default function App() {
   if (!user) {
     return (
       <>
-        <LandingPage 
-          onLogin={() => { setAuthMode('login'); setIsAuthModalOpen(true); }} 
-          onSignup={() => { setAuthMode('signup'); setIsAuthModalOpen(true); }} 
-        />
+        {showContactUnauth ? (
+          <div className="min-h-screen sm:min-h-[calc(100vh-2rem)] bg-white text-slate-900 font-sans border-0 sm:border-[12px] border-slate-900 rounded-none sm:rounded-[48px] m-0 sm:m-4 overflow-hidden flex flex-col">
+            {/* Navigation exactly like LandingPage */}
+            <nav className="sticky top-0 w-full bg-white/80 backdrop-blur-md border-b-2 sm:border-b-4 border-slate-900 z-50 px-4 sm:px-6 py-3 sm:py-4 flex justify-between items-center">
+              <div 
+                className="flex items-center gap-1.5 sm:gap-2 cursor-pointer group" 
+                onClick={() => setShowContactUnauth(false)}
+              >
+                <motion.div 
+                  whileHover={{ rotate: 360 }}
+                  className="w-8 h-8 sm:w-10 sm:h-10 bg-brand-primary border-2 border-slate-900 rounded-lg shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] flex items-center justify-center"
+                >
+                  <CheckCircle2 className="text-white" size={18} />
+                </motion.div>
+                <span className="text-base sm:text-xl font-black tracking-tighter uppercase whitespace-nowrap group-hover:text-brand-primary transition-colors">Task It</span>
+              </div>
+              <div className="flex items-center gap-2 sm:gap-4">
+                <button className="text-xs sm:text-sm font-bold text-brand-primary hidden sm:block">Contact</button>
+                <button onClick={() => { setAuthMode('login'); setIsAuthModalOpen(true); }} className="text-xs sm:text-sm font-bold hover:text-brand-primary transition-colors hidden min-[400px]:block">Login</button>
+                <motion.button 
+                  whileHover={{ scale: 1.05, translateZ: 0 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => { setAuthMode('signup'); setIsAuthModalOpen(true); }}
+                  className="bg-slate-900 text-white px-3 sm:px-6 py-1.5 sm:py-2 rounded-lg font-bold text-[10px] sm:text-sm shadow-[2px_2px_0px_0px_rgba(16,185,129,1)] sm:shadow-[4px_4px_0px_0px_rgba(16,185,129,1)] hover:shadow-none hover:translate-x-[1px] sm:hover:translate-x-[2px] hover:translate-y-[1px] sm:hover:translate-y-[2px] transition-all"
+                >
+                  Get Started
+                </motion.button>
+              </div>
+            </nav>
+            <div className="flex-1 overflow-y-auto p-4 sm:p-12 flex items-center justify-center bg-slate-50/30">
+              <ContactPage onBack={() => setShowContactUnauth(false)} />
+            </div>
+          </div>
+        ) : (
+          <LandingPage 
+            onLogin={() => { setAuthMode('login'); setIsAuthModalOpen(true); }} 
+            onSignup={() => { setAuthMode('signup'); setIsAuthModalOpen(true); }} 
+            onContact={() => setShowContactUnauth(true)}
+          />
+        )}
         <AuthModal 
           isOpen={isAuthModalOpen} 
           mode={authMode} 
@@ -509,6 +547,13 @@ export default function App() {
               active={currentView === 'settings'} 
               collapsed={!isSidebarOpen} 
               onClick={() => setCurrentView('settings')}
+            />
+            <SidebarItem 
+              icon={<Mail size={20} />} 
+              label="Contact" 
+              active={currentView === 'contact'} 
+              collapsed={!isSidebarOpen} 
+              onClick={() => setCurrentView('contact')}
             />
           </nav>
 
@@ -1003,6 +1048,10 @@ export default function App() {
                 </div>
               </div>
             </section>
+          )}
+
+          {currentView === 'contact' && (
+            <ContactPage onBack={() => setCurrentView('dashboard')} />
           )}
 
           <footer className="pt-12 pb-6 border-t-2 border-slate-100 flex flex-col items-center justify-center gap-4">

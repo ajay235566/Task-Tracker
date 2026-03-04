@@ -218,6 +218,44 @@ app.post('/api/auth/logout', (req, res) => {
   res.json({ success: true });
 });
 
+app.post('/api/contact', async (req, res) => {
+  const { name, email, subject, message } = req.body;
+  
+  if (!name || !email || !subject || !message) {
+    return res.status(400).json({ error: 'All fields are required' });
+  }
+
+  try {
+    if (process.env.SMTP_USER) {
+      await transporter.sendMail({
+        from: process.env.SMTP_FROM || '"Task It Contact" <contact@example.com>',
+        to: process.env.CONTACT_EMAIL || process.env.SMTP_USER,
+        replyTo: email,
+        subject: `Contact Form: ${subject}`,
+        text: `Name: ${name}\nEmail: ${email}\n\nMessage:\n${message}`,
+        html: `
+          <div style="font-family: sans-serif; padding: 20px; border: 4px solid #0f172a; border-radius: 12px;">
+            <h1 style="margin-top: 0; color: #10b981;">New Contact Message</h1>
+            <p><strong>From:</strong> ${name} (${email})</p>
+            <p><strong>Subject:</strong> ${subject}</p>
+            <div style="background: #f8fafc; padding: 15px; border-left: 4px solid #0f172a; margin: 20px 0;">
+              <p style="margin: 0; white-space: pre-wrap;">${message}</p>
+            </div>
+            <p style="color: #64748b; font-size: 12px;">- Task It System</p>
+          </div>
+        `,
+      });
+    } else {
+      console.log('SMTP not configured. Contact message received:', { name, email, subject, message });
+    }
+
+    res.json({ success: true, message: 'Message sent successfully' });
+  } catch (err: any) {
+    console.error('Contact form error:', err);
+    res.status(500).json({ error: 'Failed to send message' });
+  }
+});
+
 app.get('/api/auth/me', async (req: any, res) => {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
