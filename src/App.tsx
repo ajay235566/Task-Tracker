@@ -439,7 +439,7 @@ export default function App() {
     return (
       <>
         {showContactUnauth ? (
-          <div className="min-h-screen sm:min-h-[calc(100vh-2rem)] bg-white text-slate-900 font-sans border-0 sm:border-[12px] border-slate-900 rounded-none sm:rounded-[48px] m-0 sm:m-4 overflow-hidden flex flex-col">
+          <div className="min-h-screen sm:min-h-[calc(100vh-2rem)] bg-white text-slate-900 font-sans border-0 sm:border-[12px] border-slate-900 rounded-none sm:rounded-[48px] m-0 sm:m-4 overflow-x-hidden flex flex-col">
             {/* Navigation exactly like LandingPage */}
             <nav className="sticky top-0 w-full bg-white/80 backdrop-blur-md border-b-2 sm:border-b-4 border-slate-900 z-50 px-4 sm:px-6 py-3 sm:py-4 flex justify-between items-center">
               <div 
@@ -497,8 +497,8 @@ export default function App() {
       <div className="h-full w-full flex bg-white border-2 sm:border-4 border-slate-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] sm:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] overflow-hidden rounded-[32px] relative">
         {/* Sidebar */}
         <aside className={cn(
-          "bg-white border-r-2 sm:border-r-4 border-slate-900 transition-all duration-300 flex flex-col z-40",
-          isSidebarOpen ? "w-64" : "w-0 sm:w-20 overflow-hidden"
+          "bg-white border-r-2 sm:border-r-4 border-slate-900 transition-all duration-300 flex flex-col z-40 hidden sm:flex",
+          isSidebarOpen ? "w-64" : "w-20 overflow-hidden"
         )}>
           <div className="p-6 flex items-center gap-3 border-b-2 border-slate-900 bg-brand-primary">
             <div className="w-8 h-8 bg-black rounded flex items-center justify-center text-brand-primary font-black">T</div>
@@ -575,13 +575,13 @@ export default function App() {
         </aside>
 
       {/* Main Content */}
-      <main className="flex-1 flex flex-col h-full overflow-hidden">
+      <main className="flex-1 flex flex-col h-full overflow-hidden relative pb-20 sm:pb-0">
         {/* Header */}
         <header className="h-14 sm:h-20 bg-white border-b-2 sm:border-b-4 border-slate-900 flex items-center justify-between px-3 sm:px-8 shrink-0 gap-2">
           <div className="flex items-center gap-2 sm:gap-4 flex-1 max-w-xl">
             <button 
               onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-              className="sm:hidden p-2 hover:bg-slate-100 rounded-lg border-2 border-slate-900"
+              className="hidden sm:block p-2 hover:bg-slate-100 rounded-lg border-2 border-slate-900"
             >
               <Menu size={18} />
             </button>
@@ -1064,6 +1064,35 @@ export default function App() {
             <p className="text-[10px] font-bold text-slate-400 uppercase">© 2026 Vibrant Tasker</p>
           </footer>
         </div>
+
+        {/* Mobile Bottom Navigation */}
+        <nav className="sm:hidden fixed bottom-0 left-0 right-0 bg-white border-t-4 border-slate-900 flex items-center justify-around p-2 z-50">
+          <MobileNavItem 
+            icon={<LayoutDashboard size={20} />} 
+            active={currentView === 'dashboard'} 
+            onClick={() => setCurrentView('dashboard')} 
+          />
+          <MobileNavItem 
+            icon={<ListTodo size={20} />} 
+            active={currentView === 'tasks'} 
+            onClick={() => setCurrentView('tasks')} 
+          />
+          <MobileNavItem 
+            icon={<Trophy size={20} />} 
+            active={currentView === 'achievements'} 
+            onClick={() => setCurrentView('achievements')} 
+          />
+          <MobileNavItem 
+            icon={<FileText size={20} />} 
+            active={currentView === 'resume'} 
+            onClick={() => setCurrentView('resume')} 
+          />
+          <MobileNavItem 
+            icon={<Settings size={20} />} 
+            active={currentView === 'settings'} 
+            onClick={() => setCurrentView('settings')} 
+          />
+        </nav>
       </main>
 
       {/* Components */}
@@ -1084,6 +1113,18 @@ export default function App() {
     </div>
   );
 }
+
+const MobileNavItem = ({ icon, active, onClick }: { icon: React.ReactNode, active: boolean, onClick: () => void }) => (
+  <button
+    onClick={onClick}
+    className={cn(
+      "p-3 rounded-xl transition-all",
+      active ? "bg-brand-primary border-2 border-slate-900 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]" : "text-slate-400"
+    )}
+  >
+    {icon}
+  </button>
+);
 
 function AuthModal({ isOpen, mode, onClose, onSubmit, onSwitchMode }: { 
   isOpen: boolean, 

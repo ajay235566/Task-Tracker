@@ -97,7 +97,7 @@ export const ContactPage: React.FC<ContactPageProps> = ({ onBack }) => {
               </div>
               <div>
                 <p className="text-[10px] font-black uppercase text-slate-400">Email Us</p>
-                <p className="text-xs font-bold">support@taskit.com</p>
+                <p className="text-xs font-bold">ajayignited@gmail.com</p>
               </div>
             </div>
 
