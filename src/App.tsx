@@ -468,7 +468,7 @@ export default function App() {
                   whileHover={{ scale: 1.05, translateZ: 0 }}
                   whileTap={{ scale: 0.95 }}
                   onClick={() => { setAuthMode('signup'); setIsAuthModalOpen(true); }}
-                  className="bg-slate-900 text-white px-3 sm:px-6 py-1.5 sm:py-2 rounded-lg font-bold text-[10px] sm:text-sm shadow-[2px_2px_0px_0px_rgba(16,185,129,1)] sm:shadow-[4px_4px_0px_0px_rgba(16,185,129,1)] hover:shadow-none hover:translate-x-[1px] sm:hover:translate-x-[2px] hover:translate-y-[1px] sm:hover:translate-y-[2px] transition-all"
+                  className="bg-slate-900 text-white px-3 sm:px-6 py-1.5 sm:py-2 rounded-lg font-bold text-[10px] sm:text-sm shadow-[2px_2px_0px_0px_rgba(0,255,0,1)] sm:shadow-[4px_4px_0px_0px_rgba(0,255,0,1)] hover:shadow-none hover:translate-x-[1px] sm:hover:translate-x-[2px] hover:translate-y-[1px] sm:hover:translate-y-[2px] transition-all"
                 >
                   Get Started
                 </motion.button>
@@ -678,10 +678,10 @@ export default function App() {
                             <div className={cn(
                               "w-8 h-8 rounded-full flex items-center justify-center shrink-0 border-2 border-slate-900",
                               notification.type === 'warning' ? "bg-amber-100" : 
-                              notification.type === 'success' ? "bg-emerald-100" : "bg-blue-100"
+                              notification.type === 'success' ? "bg-brand-primary/10" : "bg-blue-100"
                             )}>
                               {notification.type === 'warning' ? <AlertCircle size={14} className="text-amber-600" /> : 
-                               notification.type === 'success' ? <CheckCircle size={14} className="text-emerald-600" /> : 
+                               notification.type === 'success' ? <CheckCircle size={14} className="text-brand-primary" /> : 
                                <Info size={14} className="text-blue-600" />}
                             </div>
                             <div className="flex-1">
@@ -805,7 +805,7 @@ export default function App() {
                   title="Completed" 
                   value={stats.completed} 
                   icon={<CheckCircle2 className="text-brand-primary" />} 
-                  color="bg-emerald-50" 
+                  color="bg-brand-primary/5" 
                 />
                 <StatCard 
                   title="In Progress" 

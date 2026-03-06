@@ -240,7 +240,7 @@ export const ResumeCreator: React.FC = () => {
             </ul>
           </div>
 
-          <div className="bg-slate-900 text-white p-6 rounded-2xl shadow-[6px_6px_0px_0px_rgba(16,185,129,1)]">
+          <div className="bg-slate-900 text-white p-6 rounded-2xl shadow-[6px_6px_0px_0px_rgba(0,255,0,1)]">
             <h3 className="text-lg font-black uppercase mb-2">Ready to Apply?</h3>
             <p className="text-xs font-medium text-slate-400 mb-4">Export your resume as a PDF and start your journey.</p>
             <button 

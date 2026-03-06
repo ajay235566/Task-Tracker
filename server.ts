@@ -143,7 +143,7 @@ app.post('/api/auth/forgot-password', async (req, res) => {
             <p>Hi <strong>${user.name}</strong>,</p>
             <p>You requested a password reset for your Vibrant Tasker account.</p>
             <div style="margin: 30px 0;">
-              <a href="${resetLink}" style="background: #10b981; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold; border: 2px solid #0f172a; box-shadow: 4px 4px 0px 0px #0f172a;">Reset Password</a>
+              <a href="${resetLink}" style="background: #00FF00; color: #0f172a; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold; border: 2px solid #0f172a; box-shadow: 4px 4px 0px 0px #0f172a;">Reset Password</a>
             </div>
             <p>If you didn't request this, you can safely ignore this email.</p>
             <p style="color: #64748b; font-size: 12px;">- Vibrant Tasker Team</p>
@@ -235,7 +235,7 @@ app.post('/api/contact', async (req, res) => {
         text: `Name: ${name}\nEmail: ${email}\n\nMessage:\n${message}`,
         html: `
           <div style="font-family: sans-serif; padding: 20px; border: 4px solid #0f172a; border-radius: 12px;">
-            <h1 style="margin-top: 0; color: #10b981;">New Contact Message</h1>
+            <h1 style="margin-top: 0; color: #00FF00;">New Contact Message</h1>
             <p><strong>From:</strong> ${name} (${email})</p>
             <p><strong>Subject:</strong> ${subject}</p>
             <div style="background: #f8fafc; padding: 15px; border-left: 4px solid #0f172a; margin: 20px 0;">
@@ -503,7 +503,7 @@ setInterval(async () => {
                 <h1 style="margin-top: 0;">Task Reminder</h1>
                 <p>Hi <strong>${user.name}</strong>,</p>
                 <p>This is a reminder that your task <strong>"${task.title}"</strong> is due on <strong>${task.dueDate}</strong>.</p>
-                <div style="background: #f8fafc; padding: 15px; border-left: 4px solid #10b981; margin: 20px 0;">
+                <div style="background: #f8fafc; padding: 15px; border-left: 4px solid #00FF00; margin: 20px 0;">
                   <p style="margin: 0;"><strong>Description:</strong> ${task.description}</p>
                   <p style="margin: 5px 0 0 0;"><strong>Priority:</strong> ${task.priority.toUpperCase()}</p>
                 </div>

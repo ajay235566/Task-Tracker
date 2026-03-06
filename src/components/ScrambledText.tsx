@@ -56,7 +56,7 @@ const Letter = ({ char, isHovered }: { char: string, isHovered: boolean }) => {
         x: isHovered ? 0 : randomX,
         y: isHovered ? 0 : randomY,
         rotate: isHovered ? 0 : randomRotate,
-        color: isHovered ? "#10b981" : "#94a3b8",
+        color: isHovered ? "#00FF00" : "#94a3b8",
         scale: isHovered ? 1.2 : 0.9,
         opacity: isHovered ? 1 : 0.7,
         marginRight: isHovered ? "0.02em" : "0em",
