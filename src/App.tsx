@@ -462,7 +462,7 @@ export default function App() {
                 <span className="text-base sm:text-xl font-black tracking-tighter uppercase whitespace-nowrap group-hover:text-brand-primary transition-colors">Task It</span>
               </div>
               <div className="flex items-center gap-2 sm:gap-4">
-                <button className="text-xs sm:text-sm font-bold text-brand-primary hidden sm:block">Contact</button>
+                <button onClick={() => setShowContactUnauth(true)} className="text-xs sm:text-sm font-bold text-brand-primary">Contact</button>
                 <button onClick={() => { setAuthMode('login'); setIsAuthModalOpen(true); }} className="text-xs sm:text-sm font-bold hover:text-brand-primary transition-colors hidden min-[400px]:block">Login</button>
                 <motion.button 
                   whileHover={{ scale: 1.05, translateZ: 0 }}
@@ -745,6 +745,16 @@ export default function App() {
                       >
                         <Settings size={16} />
                         Settings
+                      </button>
+                      <button 
+                        onClick={() => {
+                          setCurrentView('contact');
+                          setIsProfileOpen(false);
+                        }}
+                        className="w-full text-left px-3 py-2 text-sm font-bold hover:bg-slate-100 rounded flex items-center gap-2"
+                      >
+                        <Mail size={16} />
+                        Contact
                       </button>
                       <button 
                         onClick={handleLogout}
@@ -1100,6 +1110,11 @@ export default function App() {
             active={currentView === 'settings'} 
             onClick={() => setCurrentView('settings')} 
           />
+          <MobileNavItem 
+            icon={<Mail size={20} />} 
+            active={currentView === 'contact'} 
+            onClick={() => setCurrentView('contact')} 
+          />
         </nav>
       </main>
 
@@ -1126,7 +1141,7 @@ const MobileNavItem = ({ icon, active, onClick }: { icon: React.ReactNode, activ
   <button
     onClick={onClick}
     className={cn(
-      "p-3 rounded-xl transition-all",
+      "p-2 sm:p-3 rounded-xl transition-all",
       active ? "bg-brand-primary border-2 border-slate-900 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]" : "text-slate-400"
     )}
   >

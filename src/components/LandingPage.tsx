@@ -145,7 +145,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onSignup, onC
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
-          className="text-center lg:text-left"
+          className="text-center lg:text-left min-w-0"
         >
           <motion.div 
             initial={{ scale: 0.8, opacity: 0 }}
@@ -155,13 +155,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onSignup, onC
           >
             🚀 Productivity Reimagined
           </motion.div>
-          <h1 className="text-4xl sm:text-8xl font-black leading-[1.1] sm:leading-[0.9] tracking-tight sm:tracking-tighter uppercase mb-6 break-words">
-            Crush your <span className="text-brand-primary inline-block transform -rotate-2 bg-slate-900 text-white px-3 sm:px-0 sm:bg-transparent sm:text-brand-primary">Goals</span> <br className="hidden sm:block" /> with style.
+          <h1 className="text-[2.5rem] sm:text-8xl font-black leading-[1.1] sm:leading-[0.9] tracking-tight sm:tracking-tighter uppercase mb-6 break-words sm:break-normal whitespace-pre-line sm:whitespace-normal">
+            Crush your <br className="sm:hidden" />
+            <span className="text-brand-primary inline-block transform -rotate-2 bg-slate-900 text-white px-3 sm:px-0 sm:bg-transparent sm:text-brand-primary mt-2 sm:mt-0">Goals</span> <br className="hidden sm:block" /> with style.
           </h1>
           <p className="text-base sm:text-xl text-slate-600 mb-10 max-w-lg mx-auto lg:mx-0 font-medium leading-relaxed">
             The task manager that feels like a game. Earn XP, unlock badges, and get smart email reminders for your most important work.
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
+          <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start pr-2 sm:pr-0">
             <motion.button 
               whileHover={{ scale: 1.05, rotate: -1 }}
               whileTap={{ scale: 0.95 }}
@@ -184,7 +185,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onSignup, onC
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.8, delay: 0.2 }}
-          className="relative pr-6 sm:pr-0"
+          className="relative pr-6 sm:pr-0 min-w-0"
         >
           <motion.div 
             whileHover={{ rotate: 1, scale: 1.01 }}
@@ -241,13 +242,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onSignup, onC
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              className="text-center lg:text-left"
+              className="text-center lg:text-left min-w-0"
             >
               <div className="inline-block bg-indigo-100 border-2 border-slate-900 px-4 py-1.5 rounded-full text-[10px] sm:text-xs font-black uppercase mb-6 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
                 ✨ New Feature
               </div>
-              <h2 className="text-3xl sm:text-6xl font-black uppercase tracking-tight sm:tracking-tighter mb-6 leading-[1.1] sm:leading-none">
-                Build a <span className="text-indigo-600 underline decoration-slate-900 decoration-4 underline-offset-4">Resume</span> <br className="hidden sm:block" /> that stands out.
+              <h2 className="text-[2.5rem] sm:text-6xl font-black uppercase tracking-tight sm:tracking-tighter mb-6 leading-[1.1] sm:leading-none">
+                Build a <br className="sm:hidden" />
+                <span className="text-indigo-600 underline decoration-slate-900 decoration-4 underline-offset-4">Resume</span> <br className="hidden sm:block" /> that stands out.
               </h2>
               <p className="text-base sm:text-xl text-slate-600 mb-10 font-medium leading-relaxed max-w-xl mx-auto lg:mx-0">
                 Our professional resume builder helps you create a stunning CV in minutes. Choose from 20+ templates designed to get you hired.
@@ -273,7 +275,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onSignup, onC
                 whileHover={{ scale: 1.05, x: 5 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={onSignup}
-                className="bg-indigo-600 text-white px-6 py-4 sm:px-8 sm:py-4 rounded-xl font-black text-sm sm:text-lg border-4 border-slate-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] sm:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px] transition-all flex items-center justify-center gap-2 w-full sm:w-auto"
+                className="bg-indigo-600 text-white px-6 py-4 sm:px-8 sm:py-4 rounded-xl font-black text-sm sm:text-lg border-4 border-slate-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] sm:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px] transition-all flex items-center justify-center gap-2 w-full max-w-[calc(100%-4px)] sm:max-w-none sm:w-auto"
               >
                 Create My Resume <ArrowRight size={20} />
               </motion.button>
@@ -303,9 +305,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onSignup, onC
 
           {/* Template Carousel */}
           <div className="mt-20">
-            <div className="flex items-center justify-between mb-8">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 gap-4 sm:gap-0">
               <h3 className="text-xl sm:text-3xl font-black uppercase tracking-tighter">Popular Templates</h3>
-              <div className="flex gap-2">
+              <div className="flex gap-2 self-end sm:self-auto">
                 <button 
                   onClick={() => scroll('left')}
                   className="w-10 h-10 border-2 border-slate-900 rounded-full flex items-center justify-center bg-white cursor-pointer hover:bg-slate-50 transition-colors shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:shadow-none active:translate-x-[2px] active:translate-y-[2px]"
@@ -357,7 +359,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onSignup, onC
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-[radial-gradient(#000_1px,transparent_1px)] [background-size:16px_16px] opacity-10" />
         <div className="max-w-7xl mx-auto px-6 sm:px-6 relative z-10">
           <div className="text-center mb-16 sm:mb-20">
-            <h2 className="text-3xl sm:text-6xl font-black uppercase tracking-tight sm:tracking-tighter mb-6 leading-[1.1] sm:leading-none">What can you do?</h2>
+            <h2 className="text-[2.5rem] sm:text-6xl font-black uppercase tracking-tight sm:tracking-tighter mb-6 leading-[1.1] sm:leading-none">What can you do?</h2>
             <p className="text-base sm:text-xl font-medium text-slate-800 max-w-2xl mx-auto leading-relaxed">Everything you need to stay organized, motivated, and ahead of your deadlines.</p>
           </div>
           
@@ -393,13 +395,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onSignup, onC
         <div className="absolute bottom-0 left-0 w-64 h-64 bg-brand-primary/5 rounded-full blur-3xl -ml-32 -mb-32" />
         <div className="max-w-7xl mx-auto px-6 sm:px-6">
           <div className="grid lg:grid-cols-2 gap-16 items-center">
-            <div className="order-2 lg:order-1 relative">
+            <div className="order-2 lg:order-1 relative min-w-0 pr-3 sm:pr-0">
               <div className="absolute inset-0 bg-brand-primary/5 rotate-3 rounded-[2.5rem] border-4 border-dashed border-slate-300" />
               <motion.div 
                 initial={{ opacity: 0, scale: 0.95 }}
                 whileInView={{ opacity: 1, scale: 1 }}
                 viewport={{ once: true }}
-                className="relative bg-white border-4 border-slate-900 rounded-[2.5rem] p-6 sm:p-10 shadow-[10px_10px_0px_0px_rgba(16,185,129,1)] sm:shadow-[20px_20px_0px_0px_rgba(16,185,129,1)]"
+                className="relative bg-white border-4 border-slate-900 rounded-[2.5rem] p-5 sm:p-10 shadow-[8px_8px_0px_0px_rgba(16,185,129,1)] sm:shadow-[20px_20px_0px_0px_rgba(16,185,129,1)]"
               >
                 <div className="space-y-4">
                   {[
@@ -410,9 +412,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onSignup, onC
                     <motion.div 
                       key={i} 
                       whileHover={{ x: 10, backgroundColor: '#f8fafc' }}
-                      className="bg-white border-2 border-slate-900 p-4 rounded-xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] flex items-center justify-between cursor-default gap-3"
+                      className="bg-white border-2 border-slate-900 p-3 sm:p-4 rounded-xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] flex items-center justify-between cursor-default gap-2 sm:gap-3 min-w-0"
                     >
-                      <div className="flex items-center gap-3 min-w-0">
+                      <div className="flex items-center gap-2 sm:gap-3 min-w-0">
                         <div className={`w-6 h-6 rounded-full border-2 border-slate-900 shrink-0 ${task.status === 'done' ? 'bg-brand-primary' : 'bg-white'}`} />
                         <div className="min-w-0">
                           <span className="font-bold truncate block">{task.title}</span>
@@ -432,28 +434,29 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onSignup, onC
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              className="order-1 lg:order-2"
+              className="order-1 lg:order-2 min-w-0 text-center lg:text-left"
             >
               <div className="inline-block bg-emerald-100 border-2 border-slate-900 px-3 py-1 rounded-full text-xs font-black uppercase mb-4 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
                 Gamified Experience
               </div>
-              <h2 className="text-xl sm:text-6xl font-black uppercase tracking-tight sm:tracking-tighter mb-6 leading-tight sm:leading-none">
-                Master your <span className="text-brand-primary">Tasks</span>.
+              <h2 className="text-[2.5rem] sm:text-6xl font-black uppercase tracking-tight sm:tracking-tighter mb-6 leading-[1.1] sm:leading-none break-words sm:break-normal">
+                Master your <br className="sm:hidden" />
+                <span className="text-brand-primary">Tasks</span>.
               </h2>
               <p className="text-base sm:text-xl text-slate-600 mb-8 font-medium">
                 Turn your to-do list into a game. Earn XP, level up, and unlock achievements as you crush your daily goals.
               </p>
               
-              <div className="grid grid-cols-2 gap-4 mb-8 pr-2 sm:pr-0">
+              <div className="grid grid-cols-1 min-[400px]:grid-cols-2 gap-4 mb-8 pr-2 sm:pr-0">
                 {[
                   { label: 'XP Points', value: 'Earn for every task' },
                   { label: 'Levels', value: 'Unlock new features' },
                   { label: 'Badges', value: 'Show off your wins' },
                   { label: 'Reminders', value: 'Never miss a beat' }
                 ].map((item, i) => (
-                  <motion.div key={i} whileHover={{ scale: 1.05, backgroundColor: '#f8fafc' }} className="bg-white border-2 border-slate-900 p-3 rounded-xl shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] sm:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
-                    <p className="text-[10px] font-black uppercase text-slate-400">{item.label}</p>
-                    <p className="text-xs font-bold text-slate-900">{item.value}</p>
+                  <motion.div key={i} whileHover={{ scale: 1.05, backgroundColor: '#f8fafc' }} className="bg-white border-2 border-slate-900 p-3 rounded-xl shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] sm:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] min-w-0">
+                    <p className="text-[10px] font-black uppercase text-slate-400 truncate">{item.label}</p>
+                    <p className="text-xs font-bold text-slate-900 truncate whitespace-nowrap overflow-hidden">{item.value}</p>
                   </motion.div>
                 ))}
               </div>
@@ -462,7 +465,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onSignup, onC
                 whileHover={{ scale: 1.05, x: 5 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={onSignup}
-                className="bg-brand-primary text-white px-6 py-4 sm:px-8 sm:py-4 rounded-xl font-black text-sm sm:text-lg border-4 border-slate-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] sm:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px] transition-all flex items-center justify-center gap-2 w-full sm:w-auto"
+                className="bg-brand-primary text-white px-6 py-4 sm:px-8 sm:py-4 rounded-xl font-black text-sm sm:text-lg border-4 border-slate-900 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] sm:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px] transition-all flex items-center justify-center gap-2 w-full max-w-[calc(100%-4px)] sm:max-w-none sm:w-auto"
               >
                 Start Tasking <ArrowRight size={20} />
               </motion.button>
@@ -497,8 +500,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onSignup, onC
               ))}
             </div>
           </div>
-          <div className="order-1 lg:order-2 text-center lg:text-left">
-            <h2 className="text-3xl sm:text-6xl font-black uppercase tracking-tight sm:tracking-tighter mb-8 leading-[1.1] sm:leading-none">Who is it for?</h2>
+          <div className="order-1 lg:order-2 text-center lg:text-left min-w-0">
+            <h2 className="text-[2.5rem] sm:text-6xl font-black uppercase tracking-tight sm:tracking-tighter mb-8 leading-[1.1] sm:leading-none">Who is it for?</h2>
             <p className="text-base sm:text-xl text-slate-600 mb-10 font-medium leading-relaxed max-w-xl mx-auto lg:mx-0">
               Vibrant Tasker is built for anyone who finds traditional task managers boring. If you want a tool that celebrates your wins and keeps you engaged, you're in the right place.
             </p>
@@ -525,7 +528,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onSignup, onC
         <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(#ffffff10_1px,transparent_1px)] [background-size:32px_32px] opacity-20" />
         <div className="max-w-7xl mx-auto px-6 sm:px-6 relative z-10">
           <div className="text-center mb-16 sm:mb-20">
-            <h2 className="text-3xl sm:text-6xl font-black uppercase tracking-tight sm:tracking-tighter mb-6 leading-[1.1] sm:leading-none">Core Features</h2>
+            <h2 className="text-[2.5rem] sm:text-6xl font-black uppercase tracking-tight sm:tracking-tighter mb-6 leading-[1.1] sm:leading-none">Core Features</h2>
             <p className="text-slate-400 font-medium max-w-xl mx-auto">Everything you need to level up your life.</p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 sm:gap-12">
