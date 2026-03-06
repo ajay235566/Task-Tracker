@@ -15,7 +15,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, onDelete, onEdit, onSt
   const isDone = task.status === 'done';
 
   const priorityColors = {
-    low: 'bg-brand-primary/10 text-brand-primary border-brand-primary/20',
+    low: 'bg-emerald-100 text-emerald-700 border-emerald-200',
     medium: 'bg-amber-100 text-amber-700 border-amber-200',
     high: 'bg-rose-100 text-rose-700 border-rose-200',
   };
