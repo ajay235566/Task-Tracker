@@ -140,10 +140,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onSignup, onC
       </nav>
 
       {/* Hero Section */}
-      <section className="relative pt-12 sm:pt-20 pb-16 sm:pb-20 px-6 sm:px-6 max-w-7xl mx-auto grid lg:grid-cols-2 gap-12 sm:gap-12 items-center z-10">
+      <section className="relative pt-12 sm:pt-20 pb-16 sm:pb-32 px-6 sm:px-6 max-w-7xl mx-auto grid lg:grid-cols-2 gap-16 sm:gap-12 items-center z-10">
         <motion.div
-          initial={{ opacity: 0, x: -30 }}
-          animate={{ opacity: 1, x: 0 }}
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
           className="text-center lg:text-left"
         >
@@ -156,7 +156,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onSignup, onC
             🚀 Productivity Reimagined
           </motion.div>
           <h1 className="text-4xl sm:text-8xl font-black leading-[1.1] sm:leading-[0.9] tracking-tight sm:tracking-tighter uppercase mb-6 break-words">
-            Crush your <span className="text-brand-primary inline-block transform -rotate-2 bg-slate-900 text-white px-2 sm:px-0 sm:bg-transparent sm:text-brand-primary">Goals</span> <br className="hidden sm:block" /> with style.
+            Crush your <span className="text-brand-primary inline-block transform -rotate-2 bg-slate-900 text-white px-3 sm:px-0 sm:bg-transparent sm:text-brand-primary">Goals</span> <br className="hidden sm:block" /> with style.
           </h1>
           <p className="text-base sm:text-xl text-slate-600 mb-10 max-w-lg mx-auto lg:mx-0 font-medium leading-relaxed">
             The task manager that feels like a game. Earn XP, unlock badges, and get smart email reminders for your most important work.
@@ -173,7 +173,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onSignup, onC
             </motion.button>
             <button 
               onClick={onLogin}
-              className="sm:hidden text-slate-900 font-black uppercase tracking-widest text-sm py-4 border-2 border-slate-900 rounded-2xl hover:bg-slate-50 transition-colors"
+              className="sm:hidden text-slate-900 font-black uppercase tracking-widest text-xs py-4 border-2 border-slate-900 rounded-2xl hover:bg-slate-50 transition-colors"
             >
               Log In to Account
             </button>
@@ -361,7 +361,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onSignup, onC
             <p className="text-base sm:text-xl font-medium text-slate-800 max-w-2xl mx-auto leading-relaxed">Everything you need to stay organized, motivated, and ahead of your deadlines.</p>
           </div>
           
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 pr-2 sm:pr-0">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8 pr-2 sm:pr-0">
             {[
               { title: 'Task Management', desc: 'Create, edit, and organize tasks with priorities and due dates. Use our intuitive drag-and-drop feel interface.', color: 'bg-white' },
               { title: 'Progress Tracking', desc: 'Watch your productivity soar with detailed stats and visual progress indicators for all your projects.', color: 'bg-white' },
@@ -375,13 +375,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onSignup, onC
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.1 }}
                 whileHover={{ y: -10, rotate: i % 2 === 0 ? 1 : -1 }}
-                className={`${item.color} border-4 border-slate-900 p-8 rounded-[2rem] shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] sm:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] hover:shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] transition-all group`}
+                className={`${item.color} border-4 border-slate-900 p-6 sm:p-8 rounded-[2rem] shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] sm:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] hover:shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] transition-all group`}
               >
-                <div className="w-12 h-12 bg-slate-100 border-2 border-slate-900 rounded-xl mb-6 flex items-center justify-center group-hover:bg-brand-primary transition-colors">
-                  <span className="font-black text-xl">{i + 1}</span>
+                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-slate-100 border-2 border-slate-900 rounded-xl mb-4 sm:mb-6 flex items-center justify-center group-hover:bg-brand-primary transition-colors">
+                  <span className="font-black text-lg sm:text-xl">{i + 1}</span>
                 </div>
-                <h3 className="text-xl font-black uppercase mb-4 tracking-tight">{item.title}</h3>
-                <p className="text-sm text-slate-600 font-medium leading-relaxed">{item.desc}</p>
+                <h3 className="text-lg sm:text-xl font-black uppercase mb-3 sm:mb-4 tracking-tight">{item.title}</h3>
+                <p className="text-xs sm:text-sm text-slate-600 font-medium leading-relaxed">{item.desc}</p>
               </motion.div>
             ))}
           </div>
@@ -521,12 +521,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onSignup, onC
       </section>
 
       {/* Features Grid */}
-      <section className="py-12 sm:py-20 bg-slate-900 text-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6">
-          <div className="text-center mb-10 sm:mb-16">
-            <h2 className="text-2xl sm:text-5xl font-black uppercase tracking-tighter mb-4 break-words">Core Features</h2>
+      <section className="py-20 sm:py-32 bg-slate-900 text-white relative overflow-hidden">
+        <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(#ffffff10_1px,transparent_1px)] [background-size:32px_32px] opacity-20" />
+        <div className="max-w-7xl mx-auto px-6 sm:px-6 relative z-10">
+          <div className="text-center mb-16 sm:mb-20">
+            <h2 className="text-3xl sm:text-6xl font-black uppercase tracking-tight sm:tracking-tighter mb-6 leading-[1.1] sm:leading-none">Core Features</h2>
+            <p className="text-slate-400 font-medium max-w-xl mx-auto">Everything you need to level up your life.</p>
           </div>
-          <div className="grid md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 sm:gap-12">
             {[
               { icon: <Zap className="text-amber-400" />, title: 'Gamified XP', desc: 'Level up as you complete tasks and unlock exclusive badges. Your productivity becomes your score.' },
               { icon: <Bell className="text-brand-primary" />, title: 'Smart Reminders', desc: 'Never miss a deadline with automated email notifications. We keep you on track even when you are away.' },
@@ -534,33 +536,23 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLogin, onSignup, onC
             ].map((f, i) => (
               <motion.div 
                 key={i} 
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.1 }}
                 whileHover={{ y: -10, scale: 1.02 }}
-                className="bg-slate-800 border-4 border-white p-8 rounded-2xl shadow-[8px_8px_0px_0px_rgba(16,185,129,1)] hover:shadow-[12px_12px_0px_0px_rgba(16,185,129,1)] transition-all"
+                className="bg-slate-800 border-4 border-white p-8 rounded-[2.5rem] shadow-[8px_8px_0px_0px_rgba(16,185,129,1)] hover:shadow-[12px_12px_0px_0px_rgba(16,185,129,1)] transition-all"
               >
-                <div className="w-12 h-12 bg-slate-700 border-2 border-white rounded-lg flex items-center justify-center mb-6">
+                <div className="w-14 h-14 bg-slate-700 border-2 border-white rounded-2xl flex items-center justify-center mb-8">
                   {f.icon}
                 </div>
-                <h3 className="text-2xl font-black uppercase mb-2">{f.title}</h3>
-                <p className="text-slate-400 font-medium">{f.desc}</p>
+                <h3 className="text-2xl font-black uppercase mb-4 tracking-tight">{f.title}</h3>
+                <p className="text-slate-400 font-medium leading-relaxed">{f.desc}</p>
               </motion.div>
             ))}
           </div>
         </div>
       </section>
-
-      {/* Mobile Floating Action Button */}
-      <div className="sm:hidden fixed bottom-8 right-6 z-[60]">
-        <motion.button
-          initial={{ scale: 0, rotate: -45 }}
-          animate={{ scale: 1, rotate: 0 }}
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.9 }}
-          onClick={onSignup}
-          className="w-16 h-16 bg-brand-primary border-4 border-slate-900 rounded-2xl shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] flex items-center justify-center text-slate-900"
-        >
-          <ArrowRight size={32} />
-        </motion.button>
-      </div>
 
       {/* Footer */}
       <footer className="py-12 px-6 bg-white border-t-4 border-slate-900 flex flex-col items-center justify-center gap-8">

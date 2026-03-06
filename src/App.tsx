@@ -13,6 +13,14 @@ import { ScrambledText } from './components/ScrambledText';
 import { trackEvent, AnalyticsEvents } from './lib/analytics';
 import { cn } from './lib/utils';
 
+const INITIAL_BADGES: Badge[] = [
+  { id: 'first-task', name: 'First Step', description: 'Complete your first task!', icon: 'https://api.dicebear.com/7.x/adventurer/svg?seed=Felix', requirement: '1_task' },
+  { id: 'five-tasks', name: 'Task Master', description: 'Complete 5 tasks!', icon: 'https://api.dicebear.com/7.x/adventurer/svg?seed=Aria', requirement: '5_tasks' },
+  { id: 'ten-tasks', name: 'Unstoppable', description: 'Complete 10 tasks!', icon: 'https://api.dicebear.com/7.x/adventurer/svg?seed=Leo', requirement: '10_tasks' },
+  { id: 'high-priority', name: 'Crisis Manager', description: 'Complete a high priority task!', icon: 'https://api.dicebear.com/7.x/adventurer/svg?seed=Maya', requirement: 'high_priority' },
+  { id: 'daily-streak', name: 'Consistent', description: 'Complete tasks on 3 different days!', icon: 'https://api.dicebear.com/7.x/adventurer/svg?seed=Zoe', requirement: '3_days' }
+];
+
 export default function App() {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
@@ -32,19 +40,14 @@ export default function App() {
   const [priorityFilter, setPriorityFilter] = useState<'all' | 'low' | 'medium' | 'high'>('all');
   
   const [userProfile, setUserProfile] = useState<UserProfile>({
+    id: 'guest',
     name: 'Guest',
     email: '',
     level: 1,
     xp: 0
   });
 
-  const [badges, setBadges] = useState<Badge[]>([
-    { id: 'first-task', name: 'First Step', description: 'Complete your first task!', icon: 'https://api.dicebear.com/7.x/adventurer/svg?seed=Felix', requirement: '1_task' },
-    { id: 'five-tasks', name: 'Task Master', description: 'Complete 5 tasks!', icon: 'https://api.dicebear.com/7.x/adventurer/svg?seed=Aria', requirement: '5_tasks' },
-    { id: 'ten-tasks', name: 'Unstoppable', description: 'Complete 10 tasks!', icon: 'https://api.dicebear.com/7.x/adventurer/svg?seed=Leo', requirement: '10_tasks' },
-    { id: 'high-priority', name: 'Crisis Manager', description: 'Complete a high priority task!', icon: 'https://api.dicebear.com/7.x/adventurer/svg?seed=Maya', requirement: 'high_priority' },
-    { id: 'daily-streak', name: 'Consistent', description: 'Complete tasks on 3 different days!', icon: 'https://api.dicebear.com/7.x/adventurer/svg?seed=Zoe', requirement: '3_days' }
-  ]);
+  const [badges, setBadges] = useState<Badge[]>(INITIAL_BADGES);
 
   // Notification states
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -133,13 +136,16 @@ export default function App() {
         }
       };
       fetchData();
+
+      const savedBadges = localStorage.getItem(`vibrant-badges-${user.id}`);
+      if (savedBadges) {
+        setBadges(JSON.parse(savedBadges));
+      } else {
+        setBadges(INITIAL_BADGES);
+      }
     } else {
       setTasks([]);
-    }
-
-    const savedBadges = localStorage.getItem('vibrant-badges');
-    if (savedBadges) {
-      setBadges(JSON.parse(savedBadges));
+      setBadges(INITIAL_BADGES);
     }
   }, [user]);
 
@@ -211,7 +217,7 @@ export default function App() {
       });
 
       if (changed) {
-        localStorage.setItem('vibrant-badges', JSON.stringify(next));
+        localStorage.setItem(`vibrant-badges-${user.id}`, JSON.stringify(next));
         return next;
       }
       return prev;
@@ -373,7 +379,8 @@ export default function App() {
   const handleLogout = async () => {
     localStorage.removeItem('vibrant-token');
     setUser(null);
-    setUserProfile({ name: 'Guest', email: '', level: 1, xp: 0 });
+    setUserProfile({ id: 'guest', name: 'Guest', email: '', level: 1, xp: 0 });
+    setBadges(INITIAL_BADGES);
     setCurrentView('dashboard');
   };
 
@@ -740,6 +747,7 @@ export default function App() {
                         Settings
                       </button>
                       <button 
+                        onClick={handleLogout}
                         className="w-full text-left px-3 py-2 text-sm font-bold hover:bg-rose-50 text-rose-600 rounded flex items-center gap-2"
                       >
                         <LogOut size={16} />
