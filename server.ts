@@ -390,8 +390,10 @@ app.post('/api/resumes', isAuthenticated, async (req: any, res) => {
       .from('resumes')
       .insert([{
         id, user_id: req.userId, fullName, email, phone, location, summary, 
-        experiences: experiences, education: education, 
-        skills: skills, projects: projects, 
+        experiences: JSON.stringify(experiences || []), 
+        education: JSON.stringify(education || []), 
+        skills: JSON.stringify(skills || []), 
+        projects: JSON.stringify(projects || []), 
         templateId, fontFamily, fontSize, margin, sectionSpacing, updatedAt
       }]);
 
@@ -415,8 +417,10 @@ app.put('/api/resumes/:id', isAuthenticated, async (req: any, res) => {
       .from('resumes')
       .update({
         fullName, email, phone, location, summary, 
-        experiences: experiences, education: education, 
-        skills: skills, projects: projects, 
+        experiences: JSON.stringify(experiences || []), 
+        education: JSON.stringify(education || []), 
+        skills: JSON.stringify(skills || []), 
+        projects: JSON.stringify(projects || []), 
         templateId, fontFamily, fontSize, margin, sectionSpacing, updatedAt
       })
       .eq('id', id)

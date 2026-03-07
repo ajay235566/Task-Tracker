@@ -80,15 +80,23 @@ export const ResumeCreator: React.FC = () => {
       const res = await fetch('/api/resumes', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
+      if (!res.ok) throw new Error('Failed to fetch');
       const data = await res.json();
-      setResumes(data);
-      if (data.length > 0) {
-        setCurrentResume(data[0]);
+      
+      if (Array.isArray(data)) {
+        setResumes(data);
+        if (data.length > 0) {
+          setCurrentResume(data[0]);
+        } else {
+          setCurrentResume(defaultResume);
+        }
       } else {
+        console.error('Expected array of resumes, got:', data);
         setCurrentResume(defaultResume);
       }
     } catch (err) {
       console.error('Failed to fetch resumes:', err);
+      setCurrentResume(defaultResume);
     }
   };
 
@@ -112,10 +120,15 @@ export const ResumeCreator: React.FC = () => {
 
       if (res.ok) {
         trackEvent(AnalyticsEvents.RESUME_CREATED);
-        fetchResumes();
+        await fetchResumes();
+        alert('Resume saved successfully!');
+      } else {
+        const errorData = await res.json();
+        alert(`Failed to save resume: ${errorData.error || 'Unknown error'}`);
       }
     } catch (err) {
       console.error('Failed to save resume:', err);
+      alert('Failed to save resume. Please check your connection.');
     } finally {
       setIsSaving(false);
     }
