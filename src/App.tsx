@@ -34,8 +34,14 @@ export default function App() {
   const [editingTask, setEditingTask] = useState<Task | undefined>();
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState<'all' | 'todo' | 'in-progress' | 'done'>('all');
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [currentView, setCurrentView] = useState<'dashboard' | 'tasks' | 'settings' | 'achievements' | 'finished' | 'resume' | 'contact'>('dashboard');
+  const [isSidebarOpen, setIsSidebarOpen] = useState(() => {
+    const saved = localStorage.getItem('vibrant-sidebar-open');
+    return saved !== null ? saved === 'true' : true;
+  });
+  const [currentView, setCurrentView] = useState<'dashboard' | 'tasks' | 'settings' | 'achievements' | 'finished' | 'resume' | 'contact'>(() => {
+    const saved = localStorage.getItem('vibrant-current-view');
+    return (saved as any) || 'dashboard';
+  });
   const [sortBy, setSortBy] = useState<'priority' | 'dueDate' | 'none'>('none');
   const [priorityFilter, setPriorityFilter] = useState<'all' | 'low' | 'medium' | 'high'>('all');
   
@@ -56,10 +62,16 @@ export default function App() {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
 
-  // Track page views
+  // Track page views and persist current view
   useEffect(() => {
     trackEvent(AnalyticsEvents.PAGE_VIEW, { page_title: currentView });
+    localStorage.setItem('vibrant-current-view', currentView);
   }, [currentView]);
+
+  // Persist sidebar state
+  useEffect(() => {
+    localStorage.setItem('vibrant-sidebar-open', String(isSidebarOpen));
+  }, [isSidebarOpen]);
 
   // Close notifications and profile when clicking outside
   useEffect(() => {
