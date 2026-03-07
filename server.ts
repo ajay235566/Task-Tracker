@@ -371,7 +371,13 @@ app.get('/api/resumes', isAuthenticated, async (req: any, res) => {
       experiences: typeof r.experiences === 'string' ? JSON.parse(r.experiences || '[]') : (r.experiences || []),
       education: typeof r.education === 'string' ? JSON.parse(r.education || '[]') : (r.education || []),
       skills: typeof r.skills === 'string' ? JSON.parse(r.skills || '[]') : (r.skills || []),
-      projects: typeof r.projects === 'string' ? JSON.parse(r.projects || '[]') : (r.projects || [])
+      projects: typeof r.projects === 'string' ? JSON.parse(r.projects || '[]') : (r.projects || []),
+      // Provide defaults for potentially missing style columns
+      fontFamily: r.fontFamily || 'Inter, sans-serif',
+      fontSize: r.fontSize || 14,
+      margin: r.margin || 15,
+      sectionSpacing: r.sectionSpacing || 20,
+      templateId: r.templateId || 'template-1'
     })));
   } catch (err: any) {
     res.status(500).json({ error: err.message });
