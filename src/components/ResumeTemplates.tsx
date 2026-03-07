@@ -13,7 +13,7 @@ export interface TemplateConfig {
   secondary: string;
   bg: string;
   style: string;
-  layout: 'single' | 'sidebar' | 'timeline';
+  layout: 'single' | 'sidebar' | 'timeline' | 'two-column' | 'modern-sidebar' | 'horizontal' | 'timeline-v2' | 'sidebar-v2' | 'header-boxed' | 'dark-header' | 'centered';
 }
 
 export const TEMPLATE_CONFIGS: TemplateConfig[] = [
@@ -43,6 +43,14 @@ export const TEMPLATE_CONFIGS: TemplateConfig[] = [
   { id: 'template-24', name: "Azure Sidebar", accent: "#0077b6", secondary: "#90e0ef", bg: "#ffffff", style: "modern", layout: "sidebar" },
   { id: 'template-25', name: "Harvest", accent: "#6f4e37", secondary: "#ecb176", bg: "#fffaf0", style: "organic", layout: "single" },
   { id: 'template-26', name: "Neon Tech", accent: "#00ff00", secondary: "#ff00ff", bg: "#0a0a0a", style: "tech", layout: "timeline" },
+  { id: 'template-27', name: "Modern Executive", accent: "#000000", secondary: "#666666", bg: "#ffffff", style: "serif", layout: "two-column" },
+  { id: 'template-28', name: "Teal Professional", accent: "#10b981", secondary: "#334155", bg: "#ffffff", style: "modern", layout: "modern-sidebar" },
+  { id: 'template-29', name: "Minimalist Red", accent: "#ef4444", secondary: "#1e293b", bg: "#ffffff", style: "minimal", layout: "horizontal" },
+  { id: 'template-30', name: "Timeline Dot", accent: "#3b82f6", secondary: "#64748b", bg: "#ffffff", style: "timeline", layout: "timeline-v2" },
+  { id: 'template-31', name: "Blush Sidebar", accent: "#fbcfe8", secondary: "#1e293b", bg: "#ffffff", style: "soft", layout: "sidebar-v2" },
+  { id: 'template-32', name: "Corporate Blue", accent: "#1e3a8a", secondary: "#f8fafc", bg: "#ffffff", style: "corporate", layout: "header-boxed" },
+  { id: 'template-33', name: "Yellow Tech", accent: "#facc15", secondary: "#1e293b", bg: "#ffffff", style: "tech", layout: "dark-header" },
+  { id: 'template-34', name: "Minimal Centered", accent: "#000000", secondary: "#64748b", bg: "#ffffff", style: "minimal", layout: "centered" },
 ];
 
 const UniversalTemplate: React.FC<{ data: ResumeData, config: TemplateConfig }> = ({ data, config }) => {
@@ -154,6 +162,330 @@ const UniversalTemplate: React.FC<{ data: ResumeData, config: TemplateConfig }> 
               ))}
             </>
           )}
+        </div>
+      </div>
+    );
+  }
+
+  if (config.layout === "two-column") {
+    return (
+      <div style={{ fontFamily: data.fontFamily, background: config.bg, minHeight: '297mm', fontSize: `${data.fontSize}px`, lineHeight: 1.55, color: fg }}>
+        <div style={{ padding: `${data.margin}mm`, textAlign: 'center', borderBottom: `1px solid #eee` }}>
+          <h1 style={{ fontSize: '2.5em', fontWeight: 900, textTransform: 'uppercase', letterSpacing: 2, margin: 0 }}>{data.fullName}</h1>
+          <div style={{ fontSize: '1.2em', color: fgMid, textTransform: 'uppercase', letterSpacing: 4, marginTop: 8 }}>{data.title}</div>
+        </div>
+        <div style={{ display: 'flex', padding: `${data.margin}mm` }}>
+          <div style={{ width: '35%', paddingRight: 30, borderRight: '1px solid #eee' }}>
+            <SectionTitle title="Contact" />
+            <div style={{ fontSize: '0.9em', color: fgMid, lineHeight: 1.8 }}>
+              {data.email && <div>{data.email}</div>}
+              {data.phone && <div>{data.phone}</div>}
+              {data.location && <div>{data.location}</div>}
+            </div>
+            {data.education.length > 0 && (
+              <>
+                <SectionTitle title="Education" />
+                {data.education.map(e => (
+                  <div key={e.id} style={{ marginBottom: 15 }}>
+                    <div style={{ fontWeight: 700 }}>{e.degree}</div>
+                    <div style={{ fontSize: '0.9em' }}>{e.school}</div>
+                    <div style={{ fontSize: '0.8em', color: fgLight }}>{e.graduationDate}</div>
+                  </div>
+                ))}
+              </>
+            )}
+            {data.skills.length > 0 && (
+              <>
+                <SectionTitle title="Skills" />
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                  {data.skills.map((sk, i) => <div key={i} style={{ fontSize: '0.9em' }}>{sk}</div>)}
+                </div>
+              </>
+            )}
+          </div>
+          <div style={{ flex: 1, paddingLeft: 30 }}>
+            {data.summary && (
+              <>
+                <SectionTitle title="Summary" />
+                <p style={{ fontSize: '0.95em', color: fgMid }}>{data.summary}</p>
+              </>
+            )}
+            {data.experiences.length > 0 && (
+              <>
+                <SectionTitle title="Experience" />
+                {data.experiences.map(e => (
+                  <div key={e.id} style={{ marginBottom: 20 }}>
+                    <div style={{ fontWeight: 800, fontSize: '1.1em', textTransform: 'uppercase' }}>{e.position}</div>
+                    <div style={{ fontWeight: 600, color: config.accent }}>{e.company} / {e.startDate} - {e.endDate}</div>
+                    <p style={{ fontSize: '0.9em', color: fgMid, marginTop: 5 }}>{e.description}</p>
+                  </div>
+                ))}
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (config.layout === "modern-sidebar") {
+    return (
+      <div style={{ fontFamily: data.fontFamily, background: config.bg, minHeight: '297mm', fontSize: `${data.fontSize}px`, lineHeight: 1.55, color: fg }}>
+        <div style={{ display: 'flex', height: '40mm', background: config.accent, color: '#fff', padding: `0 ${data.margin}mm`, alignItems: 'center' }}>
+          <div style={{ fontSize: '2.5em', fontWeight: 900, textTransform: 'uppercase' }}>{data.fullName}</div>
+        </div>
+        <div style={{ display: 'flex', background: '#333', color: '#fff', padding: '10px 40px', fontSize: '0.9em', gap: 40 }}>
+          {data.phone && <span>{data.phone}</span>}
+          {data.location && <span>{data.location}</span>}
+          {data.email && <span>{data.email}</span>}
+        </div>
+        <div style={{ display: 'flex', minHeight: '247mm' }}>
+          <div style={{ width: '40mm', borderRight: `4px solid ${config.accent}`, padding: '20px 10px', textAlign: 'right' }}>
+            <div style={{ color: config.accent, fontWeight: 900, textTransform: 'uppercase', marginBottom: 100 }}>Summary</div>
+            <div style={{ color: config.accent, fontWeight: 900, textTransform: 'uppercase', marginBottom: 150 }}>Skills</div>
+            <div style={{ color: config.accent, fontWeight: 900, textTransform: 'uppercase', marginBottom: 200 }}>Experience</div>
+            <div style={{ color: config.accent, fontWeight: 900, textTransform: 'uppercase' }}>Education</div>
+          </div>
+          <div style={{ flex: 1, padding: '20px 40px' }}>
+            <p style={{ marginBottom: 40 }}>{data.summary}</p>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 40 }}>
+              {data.skills.map((sk, i) => <div key={i}>• {sk}</div>)}
+            </div>
+            {data.experiences.map(e => (
+              <div key={e.id} style={{ marginBottom: 20 }}>
+                <div style={{ fontWeight: 800 }}>{e.position}, {e.startDate} - {e.endDate}</div>
+                <div style={{ fontWeight: 600 }}>{e.company}</div>
+                <p style={{ fontSize: '0.9em', color: fgMid }}>{e.description}</p>
+              </div>
+            ))}
+            {data.education.map(e => (
+              <div key={e.id} style={{ marginTop: 20 }}>
+                <div style={{ fontWeight: 800 }}>{e.degree}</div>
+                <div>{e.school} - {e.graduationDate}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (config.layout === "horizontal") {
+    return (
+      <div style={{ fontFamily: data.fontFamily, background: config.bg, minHeight: '297mm', fontSize: `${data.fontSize}px`, lineHeight: 1.55, color: fg, padding: `${data.margin}mm` }}>
+        <div style={{ marginBottom: 30 }}>
+          <h1 style={{ fontSize: '3em', fontWeight: 900, margin: 0 }}>
+            {data.fullName.split(' ')[0]} <span style={{ color: config.accent }}>{data.fullName.split(' ').slice(1).join(' ')}</span>
+          </h1>
+          <div style={{ background: '#000', color: '#fff', padding: '4px 12px', display: 'inline-block', marginTop: 10, fontSize: '0.9em' }}>
+            {data.location} | {data.phone} | {data.email}
+          </div>
+        </div>
+        <SectionTitle title="Professional Summary" />
+        <p style={{ marginBottom: 20 }}>{data.summary}</p>
+        <SectionTitle title="Work History" />
+        {data.experiences.map(e => (
+          <div key={e.id} style={{ marginBottom: 20 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 800 }}>
+              <span>{e.position}</span>
+              <span>{e.startDate} to {e.endDate}</span>
+            </div>
+            <div style={{ fontWeight: 600 }}>{e.company}</div>
+            <p style={{ fontSize: '0.9em', color: fgMid }}>{e.description}</p>
+          </div>
+        ))}
+        <SectionTitle title="Skills" />
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 20 }}>
+          {data.skills.map((sk, i) => <div key={i}>• {sk}</div>)}
+        </div>
+        <SectionTitle title="Education" />
+        {data.education.map(e => (
+          <div key={e.id} style={{ marginBottom: 10 }}>
+            <div style={{ fontWeight: 800 }}>{e.degree}</div>
+            <div>{e.school}</div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  if (config.layout === "timeline-v2") {
+    return (
+      <div style={{ fontFamily: data.fontFamily, background: config.bg, minHeight: '297mm', fontSize: `${data.fontSize}px`, lineHeight: 1.55, color: fg, padding: `${data.margin}mm` }}>
+        <div style={{ marginBottom: 40 }}>
+          <h1 style={{ fontSize: '3em', fontWeight: 900, margin: 0, lineHeight: 1 }}>{data.fullName.split(' ').join('\n')}</h1>
+          <div style={{ marginTop: 10, color: fgMid }}>{data.email} | {data.phone} | {data.location}</div>
+        </div>
+        <div style={{ position: 'relative', paddingLeft: 40 }}>
+          <div style={{ position: 'absolute', left: 10, top: 0, bottom: 0, width: 2, background: '#eee' }} />
+          
+          <div style={{ position: 'relative', marginBottom: 40 }}>
+            <div style={{ position: 'absolute', left: -36, top: 4, width: 12, height: 12, borderRadius: '50%', border: `2px solid ${config.accent}`, background: '#fff' }} />
+            <SectionTitle title="Professional Summary" />
+            <p>{data.summary}</p>
+          </div>
+
+          <div style={{ position: 'relative', marginBottom: 40 }}>
+            <div style={{ position: 'absolute', left: -36, top: 4, width: 12, height: 12, borderRadius: '50%', border: `2px solid ${config.accent}`, background: '#fff' }} />
+            <SectionTitle title="Work History" />
+            {data.experiences.map(e => (
+              <div key={e.id} style={{ marginBottom: 20 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 800 }}>
+                  <span>{e.position} | {e.company}</span>
+                  <span>{e.startDate} - {e.endDate}</span>
+                </div>
+                <p style={{ fontSize: '0.9em', color: fgMid }}>{e.description}</p>
+              </div>
+            ))}
+          </div>
+
+          <div style={{ position: 'relative', marginBottom: 40 }}>
+            <div style={{ position: 'absolute', left: -36, top: 4, width: 12, height: 12, borderRadius: '50%', border: `2px solid ${config.accent}`, background: '#fff' }} />
+            <SectionTitle title="Skills" />
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+              {data.skills.map((sk, i) => <div key={i}>• {sk}</div>)}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (config.layout === "sidebar-v2") {
+    return (
+      <div style={{ display: "flex", fontFamily: data.fontFamily, background: config.bg, minHeight: '297mm', fontSize: `${data.fontSize}px`, lineHeight: 1.55, color: fg }}>
+        <div style={{ width: '80mm', flexShrink: 0, background: config.accent, padding: `${data.margin}mm`, minHeight: '297mm' }}>
+          <h1 style={{ fontSize: '2.5em', fontWeight: 900, textTransform: 'uppercase', marginBottom: 30 }}>{data.fullName.split(' ').join('\n')}</h1>
+          <div style={{ marginBottom: 30 }}>
+            <div style={{ fontWeight: 800, textTransform: 'uppercase', fontSize: '0.8em', borderBottom: '1px solid #000', paddingBottom: 5, marginBottom: 10 }}>Contact</div>
+            <div style={{ fontSize: '0.9em' }}>{data.email}</div>
+            <div style={{ fontSize: '0.9em' }}>{data.phone}</div>
+            <div style={{ fontSize: '0.9em' }}>{data.location}</div>
+          </div>
+          <div style={{ marginBottom: 30 }}>
+            <div style={{ fontWeight: 800, textTransform: 'uppercase', fontSize: '0.8em', borderBottom: '1px solid #000', paddingBottom: 5, marginBottom: 10 }}>Skills</div>
+            {data.skills.map((sk, i) => <div key={i} style={{ fontSize: '0.9em' }}>• {sk}</div>)}
+          </div>
+        </div>
+        <div style={{ flex: 1, padding: `${data.margin}mm` }}>
+          <SectionTitle title="Professional Summary" />
+          <p style={{ marginBottom: 30 }}>{data.summary}</p>
+          <SectionTitle title="Work History" />
+          {data.experiences.map(e => (
+            <div key={e.id} style={{ marginBottom: 20 }}>
+              <div style={{ fontWeight: 800 }}>{e.position} | {e.company}</div>
+              <div style={{ fontSize: '0.9em', color: fgMid }}>{e.startDate} - {e.endDate}</div>
+              <p style={{ fontSize: '0.9em', marginTop: 5 }}>{e.description}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (config.layout === "header-boxed") {
+    return (
+      <div style={{ fontFamily: data.fontFamily, background: config.bg, minHeight: '297mm', fontSize: `${data.fontSize}px`, lineHeight: 1.55, color: fg }}>
+        <div style={{ background: config.accent, color: '#fff', padding: `${data.margin}mm`, textAlign: 'center' }}>
+          <h1 style={{ fontSize: '3em', fontWeight: 900, textTransform: 'uppercase', margin: 0 }}>{data.fullName}</h1>
+          <div style={{ marginTop: 10 }}>{data.email} | {data.phone} | {data.location}</div>
+        </div>
+        <div style={{ padding: `${data.margin}mm` }}>
+          <div style={{ display: 'flex', gap: 40, marginBottom: 30 }}>
+            <div style={{ width: '120px', flexShrink: 0, border: '1px solid #000', padding: 10, height: 'fit-content', fontWeight: 900, textTransform: 'uppercase', textAlign: 'center' }}>Summary</div>
+            <p style={{ flex: 1 }}>{data.summary}</p>
+          </div>
+          <div style={{ display: 'flex', gap: 40, marginBottom: 30 }}>
+            <div style={{ width: '120px', flexShrink: 0, border: '1px solid #000', padding: 10, height: 'fit-content', fontWeight: 900, textTransform: 'uppercase', textAlign: 'center' }}>Skills</div>
+            <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+              {data.skills.map((sk, i) => <div key={i}>• {sk}</div>)}
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: 40, marginBottom: 30 }}>
+            <div style={{ width: '120px', flexShrink: 0, border: '1px solid #000', padding: 10, height: 'fit-content', fontWeight: 900, textTransform: 'uppercase', textAlign: 'center' }}>Experience</div>
+            <div style={{ flex: 1 }}>
+              {data.experiences.map(e => (
+                <div key={e.id} style={{ marginBottom: 20 }}>
+                  <div style={{ fontWeight: 800 }}>{e.position} | {e.company}</div>
+                  <div style={{ fontSize: '0.9em', color: fgMid }}>{e.startDate} - {e.endDate}</div>
+                  <p style={{ fontSize: '0.9em', marginTop: 5 }}>{e.description}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (config.layout === "dark-header") {
+    return (
+      <div style={{ fontFamily: data.fontFamily, background: config.bg, minHeight: '297mm', fontSize: `${data.fontSize}px`, lineHeight: 1.55, color: fg }}>
+        <div style={{ background: '#1e293b', color: '#fff', padding: `${data.margin}mm` }}>
+          <h1 style={{ fontSize: '3em', fontWeight: 900, margin: 0 }}>{data.fullName}</h1>
+          <div style={{ color: config.accent, fontSize: '1.2em', fontWeight: 700 }}>{data.title}</div>
+          <div style={{ marginTop: 10, fontSize: '0.9em', color: '#94a3b8' }}>{data.email} | {data.phone} | {data.location}</div>
+        </div>
+        <div style={{ padding: `${data.margin}mm` }}>
+          <SectionTitle title="Summary" />
+          <p style={{ marginBottom: 30 }}>{data.summary}</p>
+          <div style={{ display: 'flex', gap: 40 }}>
+            <div style={{ flex: 2 }}>
+              <SectionTitle title="Experience" />
+              {data.experiences.map(e => (
+                <div key={e.id} style={{ marginBottom: 20 }}>
+                  <div style={{ fontWeight: 800 }}>{e.position}</div>
+                  <div style={{ color: config.accent, fontWeight: 700 }}>{e.company}</div>
+                  <div style={{ fontSize: '0.8em', color: fgLight }}>{e.startDate} - {e.endDate}</div>
+                  <p style={{ fontSize: '0.9em', marginTop: 5 }}>{e.description}</p>
+                </div>
+              ))}
+            </div>
+            <div style={{ flex: 1 }}>
+              <SectionTitle title="Skills" />
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
+                {data.skills.map((sk, i) => <span key={i} style={{ background: '#f1f5f9', padding: '2px 8px', borderRadius: 4, fontSize: '0.8em' }}>{sk}</span>)}
+              </div>
+              <SectionTitle title="Education" />
+              {data.education.map(e => (
+                <div key={e.id} style={{ marginBottom: 10 }}>
+                  <div style={{ fontWeight: 800, fontSize: '0.9em' }}>{e.degree}</div>
+                  <div style={{ fontSize: '0.8em' }}>{e.school}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (config.layout === "centered") {
+    return (
+      <div style={{ fontFamily: data.fontFamily, background: config.bg, minHeight: '297mm', fontSize: `${data.fontSize}px`, lineHeight: 1.55, color: fg, padding: `${data.margin}mm`, textAlign: 'center' }}>
+        <h1 style={{ fontSize: '3.5em', fontWeight: 300, letterSpacing: 8, textTransform: 'uppercase', margin: '0 0 10px' }}>{data.fullName}</h1>
+        <div style={{ letterSpacing: 4, color: fgMid, marginBottom: 40 }}>{data.email} | {data.phone} | {data.location}</div>
+        
+        <div style={{ textAlign: 'left', maxWidth: '800px', margin: '0 auto' }}>
+          <div style={{ borderTop: '1px solid #000', borderBottom: '1px solid #000', padding: '10px 0', margin: '20px 0', fontWeight: 900, textTransform: 'uppercase', letterSpacing: 2, textAlign: 'center' }}>Summary</div>
+          <p style={{ textAlign: 'center', fontStyle: 'italic' }}>{data.summary}</p>
+          
+          <div style={{ borderTop: '1px solid #000', borderBottom: '1px solid #000', padding: '10px 0', margin: '20px 0', fontWeight: 900, textTransform: 'uppercase', letterSpacing: 2, textAlign: 'center' }}>Experience</div>
+          {data.experiences.map(e => (
+            <div key={e.id} style={{ marginBottom: 30 }}>
+              <div style={{ fontWeight: 800, fontSize: '1.2em' }}>{e.position}</div>
+              <div style={{ fontWeight: 600 }}>{e.company} | {e.startDate} - {e.endDate}</div>
+              <p style={{ marginTop: 10 }}>{e.description}</p>
+            </div>
+          ))}
+
+          <div style={{ borderTop: '1px solid #000', borderBottom: '1px solid #000', padding: '10px 0', margin: '20px 0', fontWeight: 900, textTransform: 'uppercase', letterSpacing: 2, textAlign: 'center' }}>Education</div>
+          {data.education.map(e => (
+            <div key={e.id} style={{ marginBottom: 10, textAlign: 'center' }}>
+              <div style={{ fontWeight: 800 }}>{e.degree}</div>
+              <div>{e.school} - {e.graduationDate}</div>
+            </div>
+          ))}
         </div>
       </div>
     );
@@ -381,6 +713,88 @@ export const TemplateThumbnail: React.FC<{ templateId: string, selected: boolean
             <div style={{ height: 1, background: config.accent + "88", borderRadius: 1, width: "55%", marginBottom: 3 }} />
             {[15, 12, 14, 10, 13, 11].map((w, i) => <div key={i} style={{ height: 1, background: "#ddd", borderRadius: 1, width: `${w}px`, marginBottom: 1 }} />)}
           </div>
+        </div>
+      ) : config.layout === "two-column" ? (
+        <div style={{ height: "100%" }}>
+          <div style={{ padding: 2, borderBottom: '1px solid #eee' }}>
+            <div style={{ height: 4, background: config.accent, width: '60%', margin: '0 auto' }} />
+          </div>
+          <div style={{ display: 'flex', height: '100%' }}>
+            <div style={{ width: '35%', borderRight: '1px solid #eee', padding: 2 }}>
+              {[8, 12, 10].map((w, i) => <div key={i} style={{ height: 1, background: '#ccc', width: `${w}px`, marginBottom: 2 }} />)}
+            </div>
+            <div style={{ flex: 1, padding: 2 }}>
+              {[20, 25, 18, 22].map((w, i) => <div key={i} style={{ height: 1, background: '#ddd', width: `${w}px`, marginBottom: 2 }} />)}
+            </div>
+          </div>
+        </div>
+      ) : config.layout === "modern-sidebar" ? (
+        <div style={{ height: "100%" }}>
+          <div style={{ height: 12, background: config.accent }} />
+          <div style={{ height: 6, background: '#333' }} />
+          <div style={{ display: 'flex', height: '100%' }}>
+            <div style={{ width: 12, borderRight: `2px solid ${config.accent}` }} />
+            <div style={{ flex: 1, padding: 4 }}>
+              {[15, 20, 18].map((w, i) => <div key={i} style={{ height: 1, background: '#ddd', width: `${w}px`, marginBottom: 4 }} />)}
+            </div>
+          </div>
+        </div>
+      ) : config.layout === "horizontal" ? (
+        <div style={{ height: "100%", padding: 4 }}>
+          <div style={{ height: 6, background: config.accent, width: '80%', marginBottom: 4 }} />
+          <div style={{ height: 4, background: '#000', width: '60%', marginBottom: 8 }} />
+          {[10, 25, 22, 18].map((w, i) => <div key={i} style={{ height: 1, background: '#ddd', width: `${w}px`, marginBottom: 4 }} />)}
+        </div>
+      ) : config.layout === "timeline-v2" ? (
+        <div style={{ height: "100%", padding: 4 }}>
+          <div style={{ height: 8, background: '#000', width: '40%', marginBottom: 8 }} />
+          <div style={{ position: 'relative', paddingLeft: 8 }}>
+            <div style={{ position: 'absolute', left: 2, top: 0, bottom: 0, width: 1, background: '#eee' }} />
+            {[15, 20, 18].map((w, i) => (
+              <div key={i} style={{ marginBottom: 6, position: 'relative' }}>
+                <div style={{ position: 'absolute', left: -7.5, top: 0, width: 3, height: 3, borderRadius: '50%', border: `1px solid ${config.accent}`, background: '#fff' }} />
+                <div style={{ height: 2, background: '#ddd', width: `${w}px` }} />
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : config.layout === "sidebar-v2" ? (
+        <div style={{ height: "100%", display: 'flex' }}>
+          <div style={{ width: 16, background: config.accent, padding: 2 }}>
+            <div style={{ height: 4, background: '#000', width: '80%', marginBottom: 4 }} />
+            {[10, 8, 12].map((w, i) => <div key={i} style={{ height: 1, background: '#333', width: `${w}px`, marginBottom: 2 }} />)}
+          </div>
+          <div style={{ flex: 1, padding: 4 }}>
+            <div style={{ height: 2, background: '#eee', width: '100%', marginBottom: 4 }} />
+            {[20, 25, 18].map((w, i) => <div key={i} style={{ height: 1, background: '#ddd', width: `${w}px`, marginBottom: 2 }} />)}
+          </div>
+        </div>
+      ) : config.layout === "header-boxed" ? (
+        <div style={{ height: "100%" }}>
+          <div style={{ height: 16, background: config.accent, marginBottom: 4 }} />
+          <div style={{ display: 'flex', padding: 4, gap: 4 }}>
+            <div style={{ width: 12, height: 8, border: '1px solid #000' }} />
+            <div style={{ flex: 1, height: 1, background: '#ddd', width: '100%' }} />
+          </div>
+          <div style={{ display: 'flex', padding: 4, gap: 4 }}>
+            <div style={{ width: 12, height: 8, border: '1px solid #000' }} />
+            <div style={{ flex: 1, height: 1, background: '#ddd', width: '100%' }} />
+          </div>
+        </div>
+      ) : config.layout === "dark-header" ? (
+        <div style={{ height: "100%" }}>
+          <div style={{ height: 16, background: '#1e293b', marginBottom: 4 }} />
+          <div style={{ padding: 4 }}>
+            <div style={{ height: 2, background: config.accent, width: '40%', marginBottom: 4 }} />
+            {[15, 20, 18].map((w, i) => <div key={i} style={{ height: 1, background: '#ddd', width: `${w}px`, marginBottom: 2 }} />)}
+          </div>
+        </div>
+      ) : config.layout === "centered" ? (
+        <div style={{ height: "100%", padding: 4, textAlign: 'center' }}>
+          <div style={{ height: 6, background: '#000', width: '80%', margin: '0 auto 4px' }} />
+          <div style={{ height: 2, background: '#eee', width: '60%', margin: '0 auto 8px' }} />
+          <div style={{ height: 1, background: '#000', width: '100%', marginBottom: 4 }} />
+          {[15, 12, 18].map((w, i) => <div key={i} style={{ height: 1, background: '#ddd', width: `${w}px`, margin: '0 auto 2px' }} />)}
         </div>
       ) : config.layout === "timeline" ? (
         <div style={{ height: "100%" }}>
