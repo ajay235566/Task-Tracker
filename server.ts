@@ -95,10 +95,12 @@ app.post('/api/auth/signup', async (req, res) => {
     const token = jwt.sign({ userId }, JWT_SECRET, { expiresIn: '7d' });
     res.status(201).json({ id: userId, name, email, token });
   } catch (err: any) {
+    console.error('Signup error:', err);
     if (err.code === '23505') { // Postgres unique constraint error
       res.status(400).json({ error: 'Email already exists' });
+    } else if (err.message?.includes('Supabase')) {
+      res.status(500).json({ error: 'Database configuration error. Please ensure SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are set.' });
     } else {
-      console.error('Signup error:', err);
       res.status(500).json({ error: 'Failed to create user' });
     }
   }
@@ -157,7 +159,10 @@ app.post('/api/auth/forgot-password', async (req, res) => {
     res.json({ success: true, message: 'Reset link sent to your email' });
   } catch (err: any) {
     console.error('Forgot password error:', err);
-    res.status(500).json({ error: err.message });
+    const errorMessage = err.message?.includes('Supabase') 
+      ? 'Database configuration error. Please check your environment variables.'
+      : `Failed to process request: ${err.message}`;
+    res.status(500).json({ error: errorMessage });
   }
 });
 
@@ -210,7 +215,12 @@ app.post('/api/auth/login', async (req, res) => {
       res.status(401).json({ error: 'Invalid credentials' });
     }
   } catch (err: any) {
-    res.status(500).json({ error: err.message });
+    console.error('Login error:', err);
+    if (err.message?.includes('Supabase')) {
+      res.status(500).json({ error: 'Database configuration error. Please ensure SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are set.' });
+    } else {
+      res.status(500).json({ error: 'Authentication failed' });
+    }
   }
 });
 
@@ -226,7 +236,7 @@ app.post('/api/contact', async (req, res) => {
   }
 
   try {
-    if (process.env.SMTP_USER) {
+    if (process.env.SMTP_USER && process.env.SMTP_HOST) {
       await transporter.sendMail({
         from: process.env.SMTP_FROM || '"Task It Contact" <contact@example.com>',
         to: process.env.CONTACT_EMAIL || process.env.SMTP_USER,
@@ -246,13 +256,16 @@ app.post('/api/contact', async (req, res) => {
         `,
       });
     } else {
-      console.log('SMTP not configured. Contact message received:', { name, email, subject, message });
+      console.log('SMTP not fully configured. Contact message received:', { name, email, subject, message });
     }
 
     res.json({ success: true, message: 'Message sent successfully' });
   } catch (err: any) {
     console.error('Contact form error:', err);
-    res.status(500).json({ error: 'Failed to send message' });
+    const errorMessage = err.message?.includes('Supabase') 
+      ? 'Database configuration error. Please check your environment variables.'
+      : 'Failed to send message. Please check your SMTP configuration.';
+    res.status(500).json({ error: errorMessage });
   }
 });
 
@@ -406,7 +419,11 @@ app.post('/api/resumes', isAuthenticated, async (req: any, res) => {
     if (error) return res.status(500).json({ error: error.message });
     res.status(201).json({ success: true });
   } catch (err: any) {
-    res.status(500).json({ error: err.message });
+    console.error('Resume creation error:', err);
+    const errorMessage = err.message?.includes('Supabase') 
+      ? 'Database configuration error. Please check your environment variables.'
+      : `Failed to save resume: ${err.message}`;
+    res.status(500).json({ error: errorMessage });
   }
 });
 
@@ -480,7 +497,11 @@ app.post('/api/test-email', isAuthenticated, async (req: any, res) => {
     });
     res.json({ success: true });
   } catch (err: any) {
-    res.status(500).json({ error: err.message });
+    console.error('Test email error:', err);
+    const errorMessage = err.message?.includes('Supabase') 
+      ? 'Database configuration error. Please check your environment variables.'
+      : `Failed to send test email: ${err.message}`;
+    res.status(500).json({ error: errorMessage });
   }
 });
 
