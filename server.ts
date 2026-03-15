@@ -54,12 +54,27 @@ app.get('/api/health', (req, res) => {
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST,
   port: Number(process.env.SMTP_PORT) || 587,
-  secure: false,
+  secure: Number(process.env.SMTP_PORT) === 465,
   auth: {
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASS,
   },
+  tls: {
+    // Do not fail on invalid certs
+    rejectUnauthorized: false
+  }
 });
+
+// Verify connection configuration
+if (process.env.SMTP_USER && process.env.SMTP_HOST) {
+  transporter.verify((error) => {
+    if (error) {
+      console.error('SMTP Verification Error:', error);
+    } else {
+      console.log('SMTP Server is ready to take our messages');
+    }
+  });
+}
 
 // Auth Middleware
 const isAuthenticated = (req: any, res: any, next: any) => {
@@ -130,7 +145,7 @@ app.post('/api/auth/forgot-password', async (req, res) => {
 
     if (tokenError) throw tokenError;
 
-    if (process.env.SMTP_USER) {
+    if (process.env.SMTP_USER && process.env.SMTP_HOST) {
       const appUrl = process.env.APP_URL || 'http://localhost:3000';
       const resetLink = `${appUrl}?resetToken=${resetToken}`;
 
@@ -153,7 +168,7 @@ app.post('/api/auth/forgot-password', async (req, res) => {
         `,
       });
     } else {
-      console.log('SMTP not configured. Reset Token:', resetToken);
+      console.log('SMTP not fully configured. Reset Token:', resetToken);
     }
 
     res.json({ success: true, message: 'Reset link sent to your email' });
@@ -484,8 +499,8 @@ app.post('/api/test-email', isAuthenticated, async (req: any, res) => {
       return res.status(400).json({ error: 'No user email found' });
     }
 
-    if (!process.env.SMTP_USER) {
-      return res.status(400).json({ error: 'SMTP not configured in .env' });
+    if (!process.env.SMTP_USER || !process.env.SMTP_HOST) {
+      return res.status(400).json({ error: 'SMTP not fully configured in project settings' });
     }
 
     await transporter.sendMail({
@@ -493,7 +508,15 @@ app.post('/api/test-email', isAuthenticated, async (req: any, res) => {
       to: user.email,
       subject: 'Test Reminder from Vibrant Tasker',
       text: `Hi ${user.name},\n\nThis is a test email to verify your reminder settings.\n\nHappy tasking!`,
-      html: `<h1>Test Reminder</h1><p>Hi ${user.name},</p><p>This is a test email to verify your reminder settings.</p>`,
+      html: `
+        <div style="font-family: sans-serif; padding: 20px; border: 4px solid #0f172a; border-radius: 12px;">
+          <h1 style="color: #10b981;">Test Reminder</h1>
+          <p>Hi <strong>${user.name}</strong>,</p>
+          <p>This is a test email to verify your reminder settings for Vibrant Tasker.</p>
+          <p>If you received this, your email configuration is working correctly!</p>
+          <p style="color: #64748b; font-size: 12px;">- Vibrant Tasker Team</p>
+        </div>
+      `,
     });
     res.json({ success: true });
   } catch (err: any) {
