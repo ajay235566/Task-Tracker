@@ -55,13 +55,15 @@ const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST,
   port: Number(process.env.SMTP_PORT) || 587,
   secure: Number(process.env.SMTP_PORT) === 465,
+  requireTLS: Number(process.env.SMTP_PORT) === 587,
   auth: {
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASS,
   },
   tls: {
     // Do not fail on invalid certs
-    rejectUnauthorized: false
+    rejectUnauthorized: false,
+    minVersion: 'TLSv1.2'
   }
 });
 
@@ -252,8 +254,10 @@ app.post('/api/contact', async (req, res) => {
 
   try {
     if (process.env.SMTP_USER && process.env.SMTP_HOST) {
+      const fromEmail = process.env.SMTP_FROM || `"${name}" <${process.env.SMTP_USER}>`;
+      
       await transporter.sendMail({
-        from: process.env.SMTP_FROM || '"Task It Contact" <contact@example.com>',
+        from: fromEmail,
         to: process.env.CONTACT_EMAIL || process.env.SMTP_USER,
         replyTo: email,
         subject: `Contact Form: ${subject}`,
@@ -277,9 +281,18 @@ app.post('/api/contact', async (req, res) => {
     res.json({ success: true, message: 'Message sent successfully' });
   } catch (err: any) {
     console.error('Contact form error:', err);
-    const errorMessage = err.message?.includes('Supabase') 
-      ? 'Database configuration error. Please check your environment variables.'
-      : 'Failed to send message. Please check your SMTP configuration.';
+    let errorMessage = 'Failed to send message. Please check your SMTP configuration.';
+    
+    if (err.code === 'EAUTH') {
+      errorMessage = 'Authentication failed. Please check your SMTP username and password (use an App Password for Gmail).';
+    } else if (err.code === 'ESOCKET') {
+      errorMessage = 'Connection failed. Please check your SMTP host and port.';
+    } else if (err.message?.includes('Supabase')) {
+      errorMessage = 'Database configuration error. Please check your environment variables.';
+    } else {
+      errorMessage = `SMTP Error: ${err.message}`;
+    }
+    
     res.status(500).json({ error: errorMessage });
   }
 });
